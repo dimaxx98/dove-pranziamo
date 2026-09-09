@@ -449,8 +449,8 @@ function render(){
     </div>
     ${itemsHtml}
     ${removeHint}
-    ${voteStatusHtml}
     ${addRowHtml}
+    ${voteStatusHtml}
   `;
 
   document.querySelectorAll('.vote-btn').forEach(btn => { btn.onclick = () => togglePending(btn.dataset.id); });
@@ -669,6 +669,17 @@ async function init(){
       err => showFatalError(err)
     );
     render();
+
+    // ricontrolla ogni minuto se è scattata la soglia delle 14:00, anche ad app già aperta
+    setInterval(async () => {
+      if(spinning || busy) return;
+      if(state.voteDate !== periodStr()){
+        try{
+          const snap = await docRef.get();
+          if(snap.exists) state = await ensureFreshPeriod(snap.data());
+        }catch(e){ console.error('Errore controllo reset periodico', e); }
+      }
+    }, 60000);
   }catch(e){ showFatalError(e); }
 }
 
