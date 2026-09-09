@@ -158,6 +158,7 @@ const firebaseConfig = {
   appId: "1:195899666959:web:72a61dc464b169bdfee97a",
   measurementId: "G-1H99Y8N1XY"
 };
+
 /* ====================================================== */
 
 const MAX_VOTES = 9;
@@ -172,7 +173,7 @@ const PERMANENT = [
 const PERMANENT_IDS = PERMANENT.map(p => p.id);
 
 let db = null;
-let configOk = true;
+let configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
 
 if(configOk){
   firebase.initializeApp(firebaseConfig);
@@ -470,22 +471,37 @@ async function spinDecision(){
 async function init(){
   if(!configOk){ render(); return; }
   loadMyVotes();
-
-  const snap = await docRef.get();
-  if(!snap.exists){
-    const restaurants = {};
-    PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
-    const fresh = { restaurants, history: [], voteDate: todayStr() };
-    await docRef.set(fresh);
-    state = fresh;
-  } else {
-    let data = snap.data();
-    data = await ensurePermanentExist(data);
-    state = await ensureFreshDay(data);
+  try{
+    const snap = await docRef.get();
+    if(!snap.exists){
+      const restaurants = {};
+      PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
+      const fresh = { restaurants, history: [], voteDate: todayStr() };
+      await docRef.set(fresh);
+      state = fresh;
+    } else {
+      let data = snap.data();
+      data = await ensurePermanentExist(data);
+      state = await ensureFreshDay(data);
+    }
+    docRef.onSnapshot(
+      doc => { if(doc.exists){ state = doc.data(); if(!spinning) render(); } },
+      err => { showFatalError(err); }
+    );
+    render();
+  }catch(e){
+    showFatalError(e);
   }
+}
 
-  docRef.onSnapshot(doc => { if(doc.exists){ state = doc.data(); if(!spinning) render(); } });
-  render();
+function showFatalError(e){
+  console.error('Errore Firestore', e);
+  document.getElementById('content').innerHTML = `
+    <p class="empty">
+      Errore di connessione al database.<br>
+      <span style="font-size:12px;opacity:0.75;">${escapeHtml(e && e.message ? e.message : String(e))}</span><br><br>
+      <button onclick="location.reload()" style="background:var(--amber);color:#241705;border:none;border-radius:6px;padding:9px 18px;font-weight:700;cursor:pointer;">Riprova</button>
+    </p>`;
 }
 
 init();
