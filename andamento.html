@@ -21,11 +21,13 @@
     padding:18px 18px 24px; box-shadow:0 20px 60px rgba(0,0,0,0.5); min-height:100vh; }
   @media (min-width:680px){ body{ padding-top:24px; } .sheet{ border-radius:12px; min-height:auto; } }
 
-  .back-link{ display:inline-block; font-size:13px; color:var(--amber); text-decoration:none; margin-bottom:12px; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--amber); text-decoration:none; margin-bottom:12px; }
+  .back-link svg{ width:15px; height:15px; }
   h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(20px,5.5vw,25px); margin:0 0 4px; }
   .sub{ color:var(--steel); font-size:14px; margin:0 0 18px; }
   .chart-wrap{ background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; padding:14px 10px 6px; }
   .empty{ padding:30px 10px; color:var(--steel); text-align:center; font-size:14.5px; }
+  .legend-note{ font-size:11.5px; color:var(--steel); margin-top:8px; text-align:center; }
   .winners{ margin-top:22px; }
   .winners h2{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14px; margin:0 0 8px; border-bottom:1px solid var(--line); padding-bottom:8px; }
   .wrow{ display:flex; justify-content:space-between; font-size:14px; padding:7px 0; border-bottom:1px dashed var(--line); }
@@ -36,13 +38,17 @@
 </head>
 <body>
 <div class="sheet">
-  <a class="back-link" href="index.html">← Torna alla base</a>
+  <a class="back-link" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    Torna alla base
+  </a>
   <h1>Andamento ultimi 30 giorni</h1>
   <p class="sub">Voti totali per ristorante, giorno per giorno.</p>
   <div class="chart-wrap">
     <canvas id="chart" height="220"></canvas>
     <p class="empty" id="empty-msg" style="display:none;">Non ci sono ancora dati sufficienti: torna dopo qualche giorno di voti.</p>
   </div>
+  <p class="legend-note" id="legend-note" style="display:none;">La stella ★ indica il giorno in cui quel ristorante ha vinto la ruota.</p>
   <div class="winners" id="winners-block" style="display:none;">
     <h2>Chi ha vinto la ruota</h2>
     <div id="winners-list"></div>
@@ -84,14 +90,23 @@ if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
     const names = Array.from(new Set(days.flatMap(d => Object.keys(d.tallies || {}))));
     const labels = days.map(d => d.date.slice(5));
 
-    const datasets = names.map((name, i) => ({
-      label: name,
-      data: days.map(d => (d.tallies && d.tallies[name]) || 0),
-      borderColor: PALETTE[i % PALETTE.length],
-      backgroundColor: PALETTE[i % PALETTE.length],
-      tension: 0.25,
-      spanGaps: true
-    }));
+    const datasets = names.map((name, i) => {
+      const color = PALETTE[i % PALETTE.length];
+      return {
+        label: name,
+        data: days.map(d => (d.tallies && d.tallies[name]) || 0),
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.25,
+        spanGaps: true,
+        pointRadius: days.map(d => d.winner === name ? 7 : 3),
+        pointStyle: days.map(d => d.winner === name ? 'star' : 'circle'),
+        pointBackgroundColor: days.map(d => d.winner === name ? '#F3C969' : color)
+      };
+    });
+
+    const hasAnyWinner = days.some(d => d.winner);
+    if(hasAnyWinner) document.getElementById('legend-note').style.display = 'block';
 
     new Chart(document.getElementById('chart'), {
       type: 'line',
