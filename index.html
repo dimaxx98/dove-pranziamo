@@ -10,7 +10,7 @@
   html,body{margin:0;}
   :root{
     --sky:#0E1A2B; --panel:#142338; --panel-light:#1B2E48;
-    --amber:#FFB020; --red:#E8432F; --steel:#8FA6BE; --ice:#EAF1F7;
+    --amber:#FFB020; --gold:#F3C969; --red:#E8432F; --steel:#8FA6BE; --ice:#EAF1F7;
     --line: rgba(143,166,190,0.28);
   }
   body{
@@ -33,7 +33,6 @@
   @keyframes fly{ 0%{ left:-40px; } 100%{ left:105%; } }
 
   .header-text{ padding:16px 18px 2px; }
-  .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
   h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(22px, 6vw, 27px); margin:0 0 6px; color:var(--ice); }
   .sub{ color:var(--steel); font-size:14.5px; margin:0 0 4px; line-height:1.4; }
   .nav-link{ display:inline-flex; align-items:center; gap:7px; margin-top:8px; margin-right:8px; font-size:13px; color:var(--amber); text-decoration:none; border:1px solid var(--line); border-radius:6px; padding:6px 10px; white-space:nowrap; }
@@ -41,15 +40,66 @@
 
   .body-pad{ padding:6px 18px 0; }
 
+  /* ---- medal banner ---- */
+  .medal-banner{
+    position:relative; overflow:hidden;
+    margin:14px 0 10px;
+    border:1px solid var(--gold);
+    border-radius:8px;
+    padding:14px 16px;
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(180deg, rgba(243,201,105,0.10), rgba(243,201,105,0.02));
+  }
+  .medal-banner::after{
+    content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,0.18), transparent);
+    animation: shine 5s ease-in-out infinite;
+  }
+  @keyframes shine{ 0%{ left:-60%; } 45%{ left:120%; } 100%{ left:120%; } }
+  .medal-banner .laurel{ width:20px; height:34px; color:var(--gold); flex-shrink:0; opacity:0.85; }
+  .medal-banner .laurel.right{ transform:scaleX(-1); }
+  .medal-banner .medal-text{ flex:1; min-width:0; text-align:center; }
+  .medal-banner .medal-label{ font-size:10.5px; letter-spacing:0.08em; color:var(--gold); text-transform:uppercase; }
+  .medal-banner .medal-name{ font-family:'Orbitron', sans-serif; font-size:17px; font-weight:700; color:var(--ice); margin:2px 0; overflow-wrap:break-word; }
+  .medal-banner .medal-sub{ font-size:11.5px; color:var(--steel); }
+  .medal-banner.empty{ justify-content:center; text-align:center; }
+  .medal-banner.empty .medal-text{ color:var(--steel); font-size:13px; }
+
   .readout{ display:flex; align-items:center; justify-content:space-between; gap:10px;
-    border:1px solid var(--line); border-radius:6px; padding:11px 14px; margin:12px 0 18px;
+    border:1px solid var(--line); border-radius:6px; padding:11px 14px; margin:0 0 16px;
     background:rgba(255,176,32,0.04); }
   .readout .rlabel{ font-size:12px; color:var(--steel); flex-shrink:0; }
   .readout .rvalue{ font-family:'Orbitron', sans-serif; font-size:14.5px; color:var(--amber); font-weight:700;
     text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  .wheel-zone{ display:flex; flex-direction:column; align-items:center; padding:4px 0 22px; }
-  .wheel-wrap{ position:relative; width:min(72vw, 250px); height:min(72vw, 250px); margin-bottom:16px; }
+  /* ---- decide control (replaces permanent wheel) ---- */
+  .decide-zone{ display:flex; flex-direction:column; align-items:center; padding:6px 0 22px; }
+  .radar-ring{ position:relative; width:112px; height:112px; border-radius:50%;
+    border:1px solid var(--line);
+    background: repeating-radial-gradient(circle, transparent 0 14px, rgba(143,166,190,0.07) 15px 16px);
+    display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden; }
+  .radar-sweep{ position:absolute; inset:0; border-radius:50%;
+    background: conic-gradient(from 0deg, rgba(255,176,32,0.4), transparent 30%);
+    animation: sweep 4.5s linear infinite; mix-blend-mode:screen; }
+  @keyframes sweep{ to{ transform:rotate(360deg); } }
+  .decide-btn-center{ position:relative; width:66px; height:66px; border-radius:50%; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; z-index:2; }
+  .decide-btn-center svg{ width:28px; height:28px; }
+  .decide-btn-center.locked{ background:radial-gradient(circle at 35% 30%, #5A2320, #3A1210 70%); color:#7a3a36;
+    box-shadow: inset 0 0 0 2px rgba(232,67,47,0.5); cursor:not-allowed; }
+  .decide-btn-center.ready{ background:radial-gradient(circle at 35% 30%, #FFCB63, var(--amber) 70%); color:#241705;
+    box-shadow:0 0 0 3px rgba(255,176,32,0.25), 0 4px 16px rgba(0,0,0,0.5); animation: pulse-ready 2.2s ease-in-out infinite; }
+  @keyframes pulse-ready{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
+  .decide-caption{ font-size:12.5px; color:var(--steel); text-align:center; max-width:240px; }
+
+  /* ---- modal ---- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(6,10,18,0.82); display:flex; align-items:center;
+    justify-content:center; z-index:60; padding:20px; backdrop-filter:blur(2px); }
+  .modal-card{ background:var(--panel); border:1px solid var(--gold); border-radius:12px; padding:22px 18px 18px;
+    display:flex; flex-direction:column; align-items:center; max-width:340px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+  .modal-title{ font-family:'Orbitron', sans-serif; font-size:14px; color:var(--gold); margin-bottom:14px; text-align:center; letter-spacing:0.03em; }
+
+  .wheel-wrap{ position:relative; width:min(64vw, 220px); height:min(64vw, 220px); margin-bottom:8px; }
   .pointer{ position:absolute; top:-13px; left:50%; transform:translateX(-50%); width:0; height:0;
     border-left:13px solid transparent; border-right:13px solid transparent; border-top:20px solid var(--amber);
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); z-index:3; }
@@ -58,26 +108,22 @@
     transition: transform 3.6s cubic-bezier(0.12,0.72,0.15,1); }
   .wheel .slice-label{ position:absolute; top:50%; left:50%; width:50%; height:2px; transform-origin:0 0;
     display:flex; align-items:center; font-size:10.5px; font-weight:600; color:#0E1A2B;
-    padding-left:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96px; }
-  .hub{ position:absolute; top:50%; left:50%; width:66px; height:66px; transform:translate(-50%,-50%);
-    border-radius:50%; background:radial-gradient(circle at 35% 30%, #FFCB63, var(--amber) 70%);
-    border:3px solid var(--panel); box-shadow:0 4px 14px rgba(0,0,0,0.5);
-    display:flex; align-items:center; justify-content:center; flex-direction:column;
-    cursor:pointer; z-index:4; font-family:'Orbitron', sans-serif; font-size:10.5px; font-weight:800;
-    color:#241705; text-align:center; line-height:1.15; user-select:none; }
-  .hub:active{ transform:translate(-50%,-50%) scale(0.96); }
-  .hub.spinning{ opacity:0.85; cursor:default; }
-  .hub.disabled{ opacity:0.4; cursor:default; }
-  .hub .flame{ font-size:14px; }
+    padding-left:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:88px; }
+  .wheel-rivet{ position:absolute; top:50%; left:50%; width:22px; height:22px; transform:translate(-50%,-50%);
+    border-radius:50%; background:var(--panel); border:3px solid var(--amber); z-index:4; }
 
-  .winner-banner{ font-family:'Orbitron', sans-serif; font-size:18px; font-weight:700; color:var(--amber);
-    min-height:24px; text-align:center; padding:0 12px; }
-  .winner-sub{ font-size:12.5px; color:var(--steel); margin-top:2px; text-align:center; padding:0 12px; }
+  .modal-status{ font-family:'Orbitron', sans-serif; font-size:16px; color:var(--amber); min-height:22px; margin-top:6px; text-align:center; }
+
+  .gold-flash{ position:fixed; inset:0; background:radial-gradient(circle, rgba(255,203,99,0.55), transparent 70%);
+    pointer-events:none; z-index:80; animation: flashfade 0.7s ease-out forwards; }
+  @keyframes flashfade{ 0%{opacity:0;} 15%{opacity:1;} 100%{opacity:0;} }
 
   .section-head{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line);
     padding-bottom:8px; margin:4px 0 2px; gap:8px; }
   .section-head h2{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14.5px; margin:0; color:var(--ice); }
+  .section-head .who-wrap{ display:flex; align-items:center; gap:6px; }
   .section-head .who{ font-size:11.5px; color:var(--steel); }
+  .change-name{ background:none; border:none; color:var(--amber); font-size:10.5px; text-decoration:underline; cursor:pointer; padding:0; font-family:'Rajdhani', sans-serif; }
   .toggle-add{ background:var(--panel-light); border:1px solid var(--line); color:var(--amber);
     width:30px; height:30px; border-radius:50%; font-size:17px; line-height:1; cursor:pointer; flex-shrink:0; }
 
@@ -107,9 +153,6 @@
   .add-btn:disabled{ opacity:0.4; }
   .error{ color:var(--red); font-size:13px; margin-top:6px; display:none; }
 
-  .log{ margin-top:20px; padding-top:14px; border-top:1px solid var(--line); font-size:13px; color:var(--steel); }
-  .log strong{ color:var(--ice); }
-
   .name-gate{ text-align:center; padding:12px 4px 4px; }
   .name-gate p{ font-size:15px; color:var(--steel); margin:0; }
   .name-gate input{ display:block; margin:14px auto 10px; text-align:center; max-width:220px; width:100%;
@@ -126,12 +169,8 @@
 <div class="sheet" id="app">
   <div class="runway"><div class="path-line"></div><div class="jet">✈️</div></div>
   <div class="header-text">
-    <div class="header-row">
-      <div>
-        <h1>Dove pranziamo?</h1>
-        <p class="sub">Base operativa mensa: proponi il bersaglio, l'equipaggio vota, e se il consenso non decolla si passa alla ruota.</p>
-      </div>
-    </div>
+    <h1>Dove pranziamo?</h1>
+    <p class="sub">Base operativa mensa: proponi il bersaglio, l'equipaggio vota, e quando siete abbastanza si decide.</p>
     <a class="nav-link" href="https://www.oggiamensa.it/" target="_blank" rel="noopener noreferrer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
       Menù mensa oggi
@@ -143,6 +182,7 @@
   </div>
   <div class="body-pad" id="content">Caricamento…</div>
 </div>
+<div id="modal-root"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -158,7 +198,6 @@ const firebaseConfig = {
   appId: "1:195899666959:web:72a61dc464b169bdfee97a",
   measurementId: "G-1H99Y8N1XY"
 };
-
 /* ====================================================== */
 
 const MAX_VOTES = 9;
@@ -166,11 +205,14 @@ const MAX_RESTAURANTS = 12;
 const MIN_NAME_LEN = 2;
 const MAX_NAME_LEN = 40;
 const REMOVE_FROM_HOUR = 14;
+const MIN_VOTERS = 4;
+const NAME_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]+$/u;
 const PERMANENT = [
   { id: 'perm-mensa', name: 'Mensa' },
   { id: 'perm-mercato', name: 'MercaTò' }
 ];
 const PERMANENT_IDS = PERMANENT.map(p => p.id);
+const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
 
 let db = null;
 let configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
@@ -186,18 +228,16 @@ if(configOk){
 const docRef = configOk ? db.collection('lunch').doc('shared') : null;
 const logRef = configOk ? db.collection('lunch').doc('dailyLog') : null;
 
-let state = { restaurants: {}, history: [], voteDate: null };
+let state = { restaurants: {}, history: [], voteDate: null, voters: {} };
 let myName = localStorage.getItem('lunch-my-name') || null;
 let myVotes = [];
 let spinning = false;
-let lastWinnerName = null;
 let busy = false;
 let addFormOpen = false;
 
-const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
-
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function canRemoveNow(){ return new Date().getHours() >= REMOVE_FROM_HOUR; }
+function uniqueVoterCount(){ return Object.keys(state.voters || {}).length; }
 
 function loadMyVotes(){
   try{
@@ -207,6 +247,28 @@ function loadMyVotes(){
 }
 function saveMyVotes(){ localStorage.setItem('lunch-my-votes', JSON.stringify({date: todayStr(), ids: myVotes})); }
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---- icons ---- */
+function wheelIconSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="2"/></svg>`;
+}
+function exclaimIconSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>`;
+}
+function laurelSvg(side){
+  return `<svg class="laurel ${side}" viewBox="0 0 24 40" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M12 38 C 8 30, 8 20, 12 2"/>
+    <ellipse cx="9" cy="10" rx="3" ry="1.6" transform="rotate(-30 9 10)"/>
+    <ellipse cx="8" cy="18" rx="3" ry="1.6" transform="rotate(-20 8 18)"/>
+    <ellipse cx="9" cy="26" rx="3" ry="1.6" transform="rotate(-15 9 26)"/>
+    <ellipse cx="10" cy="33" rx="3" ry="1.6" transform="rotate(-10 10 33)"/>
+  </svg>`;
+}
+
+/* ---- firestore day rollover ---- */
 async function appendDailyLog(date, tallies, winner){
   if(!date) return;
   try{
@@ -214,9 +276,7 @@ async function appendDailyLog(date, tallies, winner){
       const snap = await tx.get(logRef);
       const data = snap.exists ? snap.data() : { days: [] };
       const days = data.days || [];
-      if(!days.some(d => d.date === date)){
-        days.push({ date, tallies, winner: winner || null });
-      }
+      if(!days.some(d => d.date === date)) days.push({ date, tallies, winner: winner || null });
       tx.set(logRef, { days: days.slice(-30) });
     });
   }catch(e){ console.error('Errore log giornaliero', e); }
@@ -234,7 +294,7 @@ async function ensureFreshDay(data){
     }
     const resetRestaurants = {};
     Object.keys(data.restaurants || {}).forEach(id => { resetRestaurants[id] = { ...data.restaurants[id], votes: 0 }; });
-    const fresh = { restaurants: resetRestaurants, history: data.history || [], voteDate: todayStr() };
+    const fresh = { restaurants: resetRestaurants, history: data.history || [], voters: {}, voteDate: todayStr() };
     await docRef.set(fresh);
     return fresh;
   }
@@ -244,6 +304,7 @@ async function ensureFreshDay(data){
 async function ensurePermanentExist(data){
   const missing = {};
   PERMANENT.forEach(p => { if(!data.restaurants || !data.restaurants[p.id]) missing[`restaurants.${p.id}`] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
+  if(!data.voters) missing['voters'] = {};
   if(Object.keys(missing).length){
     await docRef.update(missing);
     const snap = await docRef.get();
@@ -252,10 +313,7 @@ async function ensurePermanentExist(data){
   return data;
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
+/* ---- render ---- */
 function render(){
   const el = document.getElementById('content');
   if(!configOk){ el.innerHTML = '<p class="empty">Completa prima la configurazione (vedi avviso qui sopra).</p>'; return; }
@@ -281,12 +339,39 @@ function render(){
   const sorted = [...list].sort((a,b) => b.votes - a.votes);
   const leader = sorted[0];
   const removeOk = canRemoveNow();
+  const lastWin = state.history && state.history[0];
+
+  const medalHtml = lastWin ? `
+    <div class="medal-banner">
+      ${laurelSvg('left')}
+      <div class="medal-text">
+        <div class="medal-label">Ultima missione compiuta</div>
+        <div class="medal-name">${escapeHtml(lastWin.name)}</div>
+        <div class="medal-sub">${lastWin.date}${lastWin.addedBy ? ' · proposta da ' + escapeHtml(lastWin.addedBy) : ''}</div>
+      </div>
+      ${laurelSvg('right')}
+    </div>` : `
+    <div class="medal-banner empty">
+      <div class="medal-text">Nessuna missione ancora compiuta: vota e poi decidete insieme.</div>
+    </div>`;
 
   const readoutHtml = leader
     ? `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">${escapeHtml(leader.name)} · ${leader.votes} ${leader.votes===1?'voto':'voti'}</span></div>`
     : `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">nessun bersaglio ancora</span></div>`;
 
-  const wheelHtml = buildWheelHtml(list);
+  const voters = uniqueVoterCount();
+  const enough = voters >= MIN_VOTERS && list.length >= 2;
+  const decideHtml = `
+    <div class="decide-zone">
+      <div class="radar-ring">
+        <div class="radar-sweep"></div>
+        <button class="decide-btn-center ${enough ? 'ready':'locked'}" id="decide-center-btn" ${enough?'':'disabled'}
+          aria-label="${enough ? 'Decidi la missione' : 'Servono più voti'}">
+          ${enough ? wheelIconSvg() : exclaimIconSvg()}
+        </button>
+      </div>
+      <div class="decide-caption">${enough ? 'Tocca per far decidere la ruota' : `Servono almeno ${MIN_VOTERS} colleghi che votino oggi (${voters}/${MIN_VOTERS})`}</div>
+    </div>`;
 
   let itemsHtml = '';
   if(list.length === 0){
@@ -309,12 +394,8 @@ function render(){
     }).join('');
   }
 
-  const historyHtml = state.history && state.history.length
-    ? `<div class="log">Ultima missione compiuta: <strong>${escapeHtml(state.history[0].name)}</strong> (${state.history[0].date})</div>` : '';
-
   const limitNote = list.length >= MAX_RESTAURANTS
     ? `<p class="limit-note">Raggiunto il massimo di ${MAX_RESTAURANTS} proposte: rimuovine una per aggiungerne un'altra.</p>` : '';
-
   const nonPermCount = list.filter(r => !r.permanent).length;
   const removeHint = !removeOk && nonPermCount > 0
     ? `<p class="remove-hint">Le proposte extra si possono rimuovere solo dalle ${REMOVE_FROM_HOUR}:00 in poi, per non alterare il voto in corso.</p>` : '';
@@ -328,66 +409,40 @@ function render(){
     ${limitNote}` : '';
 
   el.innerHTML = `
+    ${medalHtml}
     ${readoutHtml}
-    <div class="wheel-zone">
-      ${wheelHtml}
-      <div class="winner-banner" id="winner-banner">${lastWinnerName ? '🎯 ' + escapeHtml(lastWinnerName) : ''}</div>
-      <div class="winner-sub">${list.length < 2 ? 'Servono almeno due proposte per far girare la ruota' : ''}</div>
-    </div>
+    ${decideHtml}
     <div class="section-head">
       <h2>Missioni proposte</h2>
-      <span class="who">${escapeHtml(myName)}</span>
+      <div class="who-wrap">
+        <span class="who">${escapeHtml(myName)}</span>
+        <button class="change-name" id="change-name-btn">cambia</button>
+      </div>
       <button class="toggle-add" id="toggle-add" aria-label="Aggiungi opzione">${addFormOpen ? '×' : '+'}</button>
     </div>
     ${itemsHtml}
     ${removeHint}
     ${addRowHtml}
-    ${historyHtml}
   `;
 
   document.querySelectorAll('.vote-btn').forEach(btn => { btn.onclick = () => toggleVote(btn.dataset.id); });
   document.querySelectorAll('[data-remove]').forEach(btn => { btn.onclick = () => removeRestaurant(btn.dataset.remove, btn.dataset.name); });
   document.getElementById('toggle-add').onclick = () => { addFormOpen = !addFormOpen; render(); };
+  document.getElementById('change-name-btn').onclick = () => {
+    if(confirm('Vuoi cambiare il nome salvato su questo dispositivo?')){
+      localStorage.removeItem('lunch-my-name'); myName = null; render();
+    }
+  };
   const addBtn = document.getElementById('add-btn');
   if(addBtn) addBtn.onclick = addRestaurant;
   const newNameInput = document.getElementById('new-name');
   if(newNameInput){ newNameInput.focus(); newNameInput.addEventListener('keydown', e => { if(e.key==='Enter') addRestaurant(); }); }
 
-  const hub = document.getElementById('hub-btn');
-  if(hub) hub.onclick = spinDecision;
-
-  if(spinning){
-    const wheelEl = document.getElementById('wheel-el');
-    if(wheelEl && wheelEl.dataset.targetAngle){
-      requestAnimationFrame(() => { wheelEl.style.transform = `rotate(${wheelEl.dataset.targetAngle}deg)`; });
-    }
-  }
+  const decideBtn = document.getElementById('decide-center-btn');
+  if(decideBtn && enough) decideBtn.onclick = openDecisionModal;
 }
 
-function buildWheelHtml(list){
-  const disabled = busy || list.length < 2;
-  if(list.length === 0){
-    return `<div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="wheel-el" style="background:var(--panel-light);"></div>
-      <div class="hub disabled" id="hub-btn"><span>🎯</span><span>VIA!</span></div></div>`;
-  }
-  const n = list.length; const seg = 360 / n;
-  let gradientParts = []; let labelsHtml = '';
-  list.forEach((r, i) => {
-    const color = PALETTE[i % PALETTE.length];
-    const start = i * seg, end = start + seg;
-    gradientParts.push(`${color} ${start}deg ${end}deg`);
-    const mid = start + seg/2;
-    labelsHtml += `<div class="slice-label" style="transform:rotate(${mid}deg);">${escapeHtml(r.name)}</div>`;
-  });
-  const bg = `conic-gradient(${gradientParts.join(',')})`;
-  const rotation = window.__wheelRotation || 0;
-  return `<div class="wheel-wrap"><div class="pointer"></div>
-    <div class="wheel" id="wheel-el" style="background:${bg}; transform:rotate(${rotation}deg);">${labelsHtml}</div>
-    <div class="hub ${spinning ? 'spinning':''} ${disabled && !spinning ? 'disabled':''}" id="hub-btn">
-      <span class="flame">${spinning ? '🔥' : '🎯'}</span><span>${spinning ? '...' : 'VIA!'}</span>
-    </div></div>`;
-}
-
+/* ---- CRUD ---- */
 async function addRestaurant(){
   if(busy) return;
   const input = document.getElementById('new-name');
@@ -398,6 +453,7 @@ async function addRestaurant(){
   if(currentList.length >= MAX_RESTAURANTS){ errEl.textContent = `Massimo ${MAX_RESTAURANTS} proposte contemporanee.`; errEl.style.display='block'; return; }
   if(val.length < MIN_NAME_LEN){ errEl.textContent = `Il nome deve avere almeno ${MIN_NAME_LEN} caratteri.`; errEl.style.display='block'; return; }
   if(val.length > MAX_NAME_LEN){ errEl.textContent = `Il nome è troppo lungo (max ${MAX_NAME_LEN} caratteri).`; errEl.style.display='block'; return; }
+  if(!NAME_PATTERN.test(val)){ errEl.textContent = 'Usa solo lettere, numeri e punteggiatura semplice (niente emoji o simboli strani).'; errEl.style.display='block'; return; }
   if(currentList.some(r => r.name.trim().toLowerCase() === val.toLowerCase())){ errEl.textContent = 'C\'è già una proposta con questo nome.'; errEl.style.display='block'; return; }
 
   busy = true; render();
@@ -428,7 +484,9 @@ async function toggleVote(id){
       const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
       let next = current + (voted ? -1 : 1);
       next = Math.max(0, Math.min(MAX_VOTES, next));
-      tx.update(docRef, { [`restaurants.${id}.votes`]: next });
+      const updates = { [`restaurants.${id}.votes`]: next };
+      if(!voted) updates[`voters.${myName}`] = true;
+      tx.update(docRef, updates);
     });
     myVotes = voted ? myVotes.filter(v => v !== id) : [...myVotes, id];
     saveMyVotes();
@@ -436,38 +494,85 @@ async function toggleVote(id){
   busy = false;
 }
 
-async function spinDecision(){
+/* ---- decision modal ---- */
+function buildWheelMarkup(list, rotation){
+  const n = list.length, seg = 360 / n;
+  let gradientParts = [], labelsHtml = '';
+  list.forEach((r, i) => {
+    const color = PALETTE[i % PALETTE.length];
+    const start = i * seg, end = start + seg;
+    gradientParts.push(`${color} ${start}deg ${end}deg`);
+    const mid = start + seg/2;
+    labelsHtml += `<div class="slice-label" style="transform:rotate(${mid}deg);">${escapeHtml(r.name)}</div>`;
+  });
+  const bg = `conic-gradient(${gradientParts.join(',')})`;
+  return `<div class="wheel-wrap"><div class="pointer"></div>
+    <div class="wheel" id="modal-wheel-el" style="background:${bg}; transform:rotate(${rotation}deg);">${labelsHtml}</div>
+    <div class="wheel-rivet"></div></div>`;
+}
+
+function goldFlash(){
+  const f = document.createElement('div');
+  f.className = 'gold-flash';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 700);
+}
+
+function openDecisionModal(){
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
-  if(spinning || busy || list.length < 2) return;
+  if(spinning || list.length < 2 || uniqueVoterCount() < MIN_VOTERS) return;
+
+  spinning = true;
+  const rotation = window.__wheelRotation || 0;
+  const modalRoot = document.getElementById('modal-root');
+  modalRoot.innerHTML = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title" id="modal-title">Estrazione in corso…</div>
+        ${buildWheelMarkup(list, rotation)}
+        <div class="modal-status" id="modal-status"></div>
+      </div>
+    </div>`;
+
   const n = list.length, seg = 360 / n;
   const pool = [];
   list.forEach((r, i) => { const w = r.votes + 1; for(let k=0;k<w;k++) pool.push(i); });
   const winnerIndex = pool[Math.floor(Math.random()*pool.length)];
   const winner = list[winnerIndex];
   const segMid = winnerIndex * seg + seg/2;
-  const currentRotation = window.__wheelRotation || 0;
   const baseTurns = 5 * 360;
   const targetWithinCircle = (360 - segMid) % 360;
-  const currentMod = ((currentRotation % 360) + 360) % 360;
-  let delta = (targetWithinCircle - currentMod + 360) % 360;
-  const newRotation = currentRotation + baseTurns + delta;
+  const currentMod = ((rotation % 360) + 360) % 360;
+  const delta = (targetWithinCircle - currentMod + 360) % 360;
+  const newRotation = rotation + baseTurns + delta;
 
-  spinning = true; lastWinnerName = null; render();
-  const wheelEl = document.getElementById('wheel-el');
-  wheelEl.dataset.targetAngle = newRotation;
-  requestAnimationFrame(() => { wheelEl.style.transform = `rotate(${newRotation}deg)`; });
+  setTimeout(() => {
+    const wheelEl = document.getElementById('modal-wheel-el');
+    if(wheelEl) wheelEl.style.transform = `rotate(${newRotation}deg)`;
+  }, 250);
 
   setTimeout(async () => {
     window.__wheelRotation = newRotation;
-    spinning = false; lastWinnerName = winner.name;
+    const titleEl = document.getElementById('modal-title');
+    const statusEl = document.getElementById('modal-status');
+    if(titleEl) titleEl.textContent = 'Missione assegnata';
+    if(statusEl) statusEl.textContent = '🎯 ' + winner.name;
+    goldFlash();
+
     try{
-      const newHistory = [{ name: winner.name, date: todayStr() }, ...(state.history || [])].slice(0, 10);
+      const newHistory = [{ name: winner.name, date: todayStr(), addedBy: winner.addedBy || null }, ...(state.history || [])].slice(0, 10);
       await docRef.update({ history: newHistory });
     }catch(e){ console.error(e); }
-    render();
-  }, 3700);
+
+    setTimeout(() => {
+      modalRoot.innerHTML = '';
+      spinning = false;
+      render();
+    }, 1500);
+  }, 250 + 3600);
 }
 
+/* ---- init ---- */
 async function init(){
   if(!configOk){ render(); return; }
   loadMyVotes();
@@ -476,7 +581,7 @@ async function init(){
     if(!snap.exists){
       const restaurants = {};
       PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
-      const fresh = { restaurants, history: [], voteDate: todayStr() };
+      const fresh = { restaurants, history: [], voters: {}, voteDate: todayStr() };
       await docRef.set(fresh);
       state = fresh;
     } else {
@@ -486,7 +591,7 @@ async function init(){
     }
     docRef.onSnapshot(
       doc => { if(doc.exists){ state = doc.data(); if(!spinning) render(); } },
-      err => { showFatalError(err); }
+      err => showFatalError(err)
     );
     render();
   }catch(e){
