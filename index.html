@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dove pranziamo?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap');
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:#1E2A22;
+    color:#2B2118;
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 80px;
+  }
+  .sheet{
+    width:100%;
+    max-width:640px;
+    background:#F7F2E7;
+    border-radius:6px;
+    padding:36px 28px 28px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:34px;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .sub{ color:#5C4E3F; font-size:15px; margin:0 0 28px; max-width:40ch; }
+  .reveal{
+    border:1px solid rgba(43,33,24,0.18);
+    border-radius:4px;
+    padding:22px 20px;
+    margin-bottom:28px;
+    text-align:center;
+    background:rgba(255,255,255,0.35);
+  }
+  .reveal .label{ font-size:13px; color:#5C4E3F; margin-bottom:6px; }
+  .reveal .pick{ font-family:'Fraunces', serif; font-size:28px; font-weight:500; min-height:38px; }
+  .reveal .pick.spinning{ color:#5C4E3F; }
+  button{ font-family:'Work Sans', sans-serif; cursor:pointer; border:none; }
+  .decide-btn{
+    margin-top:14px; background:#B23A2E; color:#F7F2E7; font-size:14px;
+    font-weight:500; padding:10px 22px; border-radius:4px;
+  }
+  .decide-btn:active{transform:scale(0.98);}
+  .decide-btn:disabled{opacity:0.5;cursor:default;}
+  .menu-header{
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom:1px solid rgba(43,33,24,0.18); padding-bottom:8px; margin-bottom:4px;
+  }
+  .menu-header h2{ font-family:'Fraunces', serif; font-weight:500; font-size:18px; margin:0; }
+  .menu-header span{ font-size:12px; color:#5C4E3F; }
+  .item{
+    display:flex; align-items:center; gap:10px; padding:14px 0;
+    border-bottom:1px dotted rgba(43,33,24,0.18);
+  }
+  .item:last-child{border-bottom:none;}
+  .item .name-wrap{flex:1;min-width:0;}
+  .item .name{ font-size:16px; font-weight:500; }
+  .item .note{ font-size:13px; color:#5C4E3F; margin-top:1px; }
+  .item .votes{ font-family:'Fraunces', serif; font-size:15px; min-width:22px; text-align:center; }
+  .vote-btn{
+    background:transparent; border:1px solid rgba(43,33,24,0.18); border-radius:50%;
+    width:34px; height:34px; font-size:16px; color:#B23A2E;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .vote-btn.voted{ background:#B23A2E; color:#F7F2E7; border-color:#B23A2E; }
+  .remove-btn{ background:transparent; color:#5C4E3F; font-size:12px; padding:2px 4px; flex-shrink:0; }
+  .add-row{ display:flex; gap:8px; margin-top:16px; }
+  .add-row input{
+    flex:1; font-family:'Work Sans', sans-serif; font-size:14px; padding:10px 12px;
+    border:1px solid rgba(43,33,24,0.18); border-radius:4px; background:#fff; color:#2B2118; min-width:0;
+  }
+  .add-row input:focus{outline:2px solid #7C9070;outline-offset:1px;}
+  .add-btn{ background:#7C9070; color:#F7F2E7; font-size:20px; width:40px; border-radius:4px; flex-shrink:0; }
+  .empty{ padding:20px 0; color:#5C4E3F; font-size:14px; text-align:center; }
+  .error{ color:#B23A2E; font-size:13px; margin-top:6px; display:none; }
+  .history{ margin-top:26px; padding-top:14px; border-top:1px solid rgba(43,33,24,0.18); font-size:13px; color:#5C4E3F; }
+  .history strong{color:#2B2118;}
+  .name-gate{ text-align:center; padding:20px 0; }
+  .name-gate input{ display:block; margin:14px auto 10px; text-align:center; max-width:220px; }
+  .name-gate button{ background:#B23A2E; color:#F7F2E7; padding:9px 20px; border-radius:4px; font-size:14px; }
+  .setup-note{
+    max-width:640px; width:100%; margin:0 auto 16px; background:#F7F2E7; color:#2B2118;
+    padding:16px 20px; border-radius:6px; font-size:13px; line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div id="setup-warning"></div>
+<div class="sheet" id="app">
+  <h1>Dove pranziamo?</h1>
+  <p class="sub">Proponete un posto, votate, e se proprio non decidete, lasciate scegliere a sorte.</p>
+  <div id="content">Caricamento…</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ======================================================
+   1) INCOLLA QUI SOTTO LA TUA CONFIGURAZIONE FIREBASE
+   (la trovi in Firebase Console > Impostazioni progetto > Le tue app)
+   ====================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
+  authDomain: "lunchwhere-14987.firebaseapp.com",
+  projectId: "lunchwhere-14987",
+  storageBucket: "lunchwhere-14987.firebasestorage.app",
+  messagingSenderId: "195899666959",
+  appId: "1:195899666959:web:72a61dc464b169bdfee97a",
+  measurementId: "G-1H99Y8N1XY"
+};
+/* ====================================================== */
+
+let db = null;
+let configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
+
+if(configOk){
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} else {
+  document.getElementById('setup-warning').innerHTML =
+    '<div class="setup-note"><strong>Configurazione mancante.</strong> Apri index.html e incolla la tua configurazione Firebase nella sezione indicata in cima al file. Vedi le istruzioni ricevute in chat.</div>';
+}
+
+const docRef = configOk ? db.collection('lunch').doc('shared') : null;
+
+let state = { restaurants: {}, history: [], voteDate: null };
+let myName = localStorage.getItem('lunch-my-name') || null;
+let myVotes = [];
+let spinning = false;
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+function loadMyVotes(){
+  try{
+    const raw = localStorage.getItem('lunch-my-votes');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      myVotes = parsed.date === todayStr() ? parsed.ids : [];
+    }
+  }catch(e){ myVotes = []; }
+}
+
+function saveMyVotes(){
+  localStorage.setItem('lunch-my-votes', JSON.stringify({date: todayStr(), ids: myVotes}));
+}
+
+async function ensureFreshDay(data){
+  if(data.voteDate !== todayStr()){
+    const resetRestaurants = {};
+    Object.keys(data.restaurants || {}).forEach(id => {
+      resetRestaurants[id] = { ...data.restaurants[id], votes: 0 };
+    });
+    await docRef.set({ restaurants: resetRestaurants, history: data.history || [], voteDate: todayStr() });
+    return { restaurants: resetRestaurants, history: data.history || [], voteDate: todayStr() };
+  }
+  return data;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function render(){
+  const el = document.getElementById('content');
+
+  if(!configOk){
+    el.innerHTML = '<p class="empty">Completa prima la configurazione (vedi avviso qui sopra).</p>';
+    return;
+  }
+
+  if(!myName){
+    el.innerHTML = `
+      <div class="name-gate">
+        <p style="font-size:14px;color:#5C4E3F;margin:0;">Come ti chiami, per capire chi ha votato cosa?</p>
+        <input type="text" id="name-input" placeholder="Il tuo nome" maxlength="24">
+        <div><button id="name-save">Comincia</button></div>
+        <p class="error" id="name-error">Scrivi un nome prima di continuare.</p>
+      </div>`;
+    document.getElementById('name-save').onclick = () => {
+      const val = document.getElementById('name-input').value.trim();
+      if(!val){ document.getElementById('name-error').style.display = 'block'; return; }
+      myName = val;
+      localStorage.setItem('lunch-my-name', val);
+      render();
+    };
+    document.getElementById('name-input').addEventListener('keydown', e => {
+      if(e.key === 'Enter') document.getElementById('name-save').click();
+    });
+    return;
+  }
+
+  const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
+  const sorted = [...list].sort((a,b) => b.votes - a.votes);
+  const topPick = spinning ? '…' : (sorted[0] ? sorted[0].name : '—');
+
+  let itemsHtml = '';
+  if(list.length === 0){
+    itemsHtml = '<p class="empty">Nessun posto proposto ancora. Aggiungine uno qui sotto.</p>';
+  } else {
+    itemsHtml = sorted.map(r => {
+      const voted = myVotes.includes(r.id);
+      return `
+        <div class="item">
+          <button class="vote-btn ${voted ? 'voted' : ''}" data-id="${r.id}" aria-label="Vota ${escapeHtml(r.name)}">${voted ? '✓' : '+'}</button>
+          <div class="name-wrap">
+            <div class="name">${escapeHtml(r.name)}</div>
+          </div>
+          <div class="votes">${r.votes}</div>
+          <button class="remove-btn" data-remove="${r.id}" aria-label="Rimuovi ${escapeHtml(r.name)}">rimuovi</button>
+        </div>`;
+    }).join('');
+  }
+
+  const historyHtml = state.history && state.history.length
+    ? `<div class="history">Ultima scelta: <strong>${escapeHtml(state.history[0].name)}</strong> (${state.history[0].date})</div>`
+    : '';
+
+  el.innerHTML = `
+    <div class="reveal">
+      <div class="label">Oggi, secondo i voti</div>
+      <div class="pick ${spinning ? 'spinning' : ''}" id="pick-text">${escapeHtml(topPick)}</div>
+      <button class="decide-btn" id="decide-btn" ${list.length === 0 ? 'disabled' : ''}>Decidi tu per noi</button>
+    </div>
+    <div class="menu-header">
+      <h2>Proposte</h2>
+      <span>${escapeHtml(myName)}</span>
+    </div>
+    ${itemsHtml}
+    <div class="add-row">
+      <input type="text" id="new-name" placeholder="Nome del posto">
+      <button class="add-btn" id="add-btn" aria-label="Aggiungi">+</button>
+    </div>
+    <p class="error" id="add-error">Scrivi un nome prima di aggiungere.</p>
+    ${historyHtml}
+  `;
+
+  document.querySelectorAll('.vote-btn').forEach(btn => { btn.onclick = () => toggleVote(btn.dataset.id); });
+  document.querySelectorAll('[data-remove]').forEach(btn => { btn.onclick = () => removeRestaurant(btn.dataset.remove); });
+  document.getElementById('add-btn').onclick = addRestaurant;
+  document.getElementById('new-name').addEventListener('keydown', e => { if(e.key === 'Enter') addRestaurant(); });
+  document.getElementById('decide-btn').onclick = spinDecision;
+}
+
+async function addRestaurant(){
+  const input = document.getElementById('new-name');
+  const val = input.value.trim();
+  if(!val){ document.getElementById('add-error').style.display = 'block'; return; }
+  const id = 'r' + Date.now() + Math.floor(Math.random()*1000);
+  await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName } });
+}
+
+async function removeRestaurant(id){
+  await docRef.update({ [`restaurants.${id}`]: firebase.firestore.FieldValue.delete() });
+}
+
+async function toggleVote(id){
+  const voted = myVotes.includes(id);
+  const delta = voted ? -1 : 1;
+  myVotes = voted ? myVotes.filter(v => v !== id) : [...myVotes, id];
+  saveMyVotes();
+  await docRef.update({ [`restaurants.${id}.votes`]: firebase.firestore.FieldValue.increment(delta) });
+}
+
+async function spinDecision(){
+  const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
+  if(spinning || list.length === 0) return;
+  spinning = true;
+  render();
+  const pool = [];
+  list.forEach(r => { const w = r.votes + 1; for(let i=0;i<w;i++) pool.push(r); });
+  const pickText = document.getElementById('pick-text');
+  let ticks = 0;
+  const interval = setInterval(() => {
+    const rand = list[Math.floor(Math.random()*list.length)];
+    if(pickText) pickText.textContent = rand.name;
+    ticks++;
+    if(ticks >= 14){
+      clearInterval(interval);
+      const winner = pool[Math.floor(Math.random()*pool.length)];
+      finishSpin(winner);
+    }
+  }, 90);
+}
+
+async function finishSpin(winner){
+  const newHistory = [{ name: winner.name, date: todayStr() }, ...(state.history || [])].slice(0, 10);
+  await docRef.update({ history: newHistory });
+  spinning = false;
+}
+
+async function init(){
+  if(!configOk){ render(); return; }
+  loadMyVotes();
+
+  const snap = await docRef.get();
+  if(!snap.exists){
+    await docRef.set({ restaurants: {}, history: [], voteDate: todayStr() });
+  } else {
+    state = await ensureFreshDay(snap.data());
+  }
+
+  docRef.onSnapshot(doc => {
+    if(doc.exists){
+      state = doc.data();
+      render();
+    }
+  });
+
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
