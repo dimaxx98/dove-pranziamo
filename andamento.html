@@ -25,8 +25,9 @@
   .back-link svg{ width:15px; height:15px; }
   h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(20px,5.5vw,25px); margin:0 0 4px; }
   .sub{ color:var(--steel); font-size:14px; margin:0 0 18px; }
-  .chart-wrap{ background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; padding:14px 10px 6px; }
-  .empty{ padding:30px 10px; color:var(--steel); text-align:center; font-size:14.5px; }
+  .chart-wrap{ position:relative; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; padding:14px 10px 6px; }
+  .chart-overlay{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
+    padding:20px; color:var(--steel); font-size:13.5px; pointer-events:none; }
   .legend-note{ font-size:11.5px; color:var(--steel); margin-top:8px; text-align:center; }
   .winners{ margin-top:22px; }
   .winners h2{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14px; margin:0 0 8px; border-bottom:1px solid var(--line); padding-bottom:8px; }
@@ -46,7 +47,7 @@
   <p class="sub">Voti totali per ristorante, giorno per giorno.</p>
   <div class="chart-wrap">
     <canvas id="chart" height="220"></canvas>
-    <p class="empty" id="empty-msg" style="display:none;">Non ci sono ancora dati sufficienti: torna dopo qualche giorno di voti.</p>
+    <div class="chart-overlay" id="chart-overlay" style="display:none;"></div>
   </div>
   <p class="legend-note" id="legend-note" style="display:none;">La stella ★ indica il giorno in cui quel ristorante ha vinto la ruota.</p>
   <div class="winners" id="winners-block" style="display:none;">
@@ -74,6 +75,47 @@ const firebaseConfig = {
 
 const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
 
+function pad(n){ return String(n).padStart(2,'0'); }
+function last30Labels(){
+  const out = [];
+  for(let i=29; i>=0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    out.push(`${pad(d.getMonth()+1)}-${pad(d.getDate())}`);
+  }
+  return out;
+}
+
+function renderEmptyChart(message){
+  const labels = last30Labels();
+  new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'In attesa di voti',
+        data: labels.map(() => 0),
+        borderColor: 'rgba(143,166,190,0.35)',
+        backgroundColor: 'rgba(143,166,190,0.35)',
+        borderDash: [5,5],
+        pointRadius: 0,
+        tension: 0.2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8FA6BE', maxTicksLimit: 8 }, grid: { color: 'rgba(143,166,190,0.12)' } },
+        y: { beginAtZero: true, max: 5, ticks: { color: '#8FA6BE', stepSize: 1 }, grid: { color: 'rgba(143,166,190,0.12)' } }
+      }
+    }
+  });
+  const overlay = document.getElementById('chart-overlay');
+  overlay.textContent = message;
+  overlay.style.display = 'flex';
+}
+
 if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
@@ -83,7 +125,7 @@ if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
     days.sort((a,b) => a.date.localeCompare(b.date));
 
     if(days.length === 0){
-      document.getElementById('empty-msg').style.display = 'block';
+      renderEmptyChart('Ancora nessun dato: torna dopo qualche giorno di voti.');
       return;
     }
 
@@ -113,9 +155,7 @@ if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
       data: { labels, datasets },
       options: {
         responsive: true,
-        plugins: {
-          legend: { position: 'top', labels: { color: '#EAF1F7', font: { family: 'Rajdhani' } } }
-        },
+        plugins: { legend: { position: 'top', labels: { color: '#EAF1F7', font: { family: 'Rajdhani' } } } },
         scales: {
           x: { ticks: { color: '#8FA6BE' }, grid: { color: 'rgba(143,166,190,0.15)' } },
           y: { beginAtZero: true, ticks: { color: '#8FA6BE', stepSize: 1 }, grid: { color: 'rgba(143,166,190,0.15)' } }
@@ -132,11 +172,10 @@ if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
     }
   }).catch(err => {
     console.error(err);
-    document.getElementById('empty-msg').style.display = 'block';
+    renderEmptyChart('Errore nel caricare i dati: ' + (err && err.message ? err.message : err));
   });
 } else {
-  document.getElementById('empty-msg').textContent = 'Configurazione Firebase mancante in questo file.';
-  document.getElementById('empty-msg').style.display = 'block';
+  renderEmptyChart('Configurazione Firebase mancante in questo file.');
 }
 </script>
 </body>
