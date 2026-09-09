@@ -109,6 +109,22 @@
     padding-left:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:88px; }
   .wheel-rivet{ position:absolute; top:50%; left:50%; width:22px; height:22px; transform:translate(-50%,-50%);
     border-radius:50%; background:var(--panel); border:3px solid var(--amber); z-index:4; }
+
+  .coin-wrap{ perspective:700px; width:150px; height:150px; margin:6px 0 8px; }
+  .coin{ position:relative; width:100%; height:100%; transform-style:preserve-3d;
+    transition: transform 2.2s cubic-bezier(.15,.65,.25,1); }
+  .coin-face{ position:absolute; inset:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-family:'Orbitron', sans-serif; font-weight:700; font-size:13px; padding:14px;
+    backface-visibility:hidden; border:4px solid var(--gold);
+    background:radial-gradient(circle at 35% 30%, #FFCB63, var(--amber) 70%); color:#241705;
+    box-shadow:0 4px 18px rgba(0,0,0,0.5); overflow-wrap:break-word; }
+  .coin-face.back{ transform:rotateY(180deg); }
+
+  .lock-list{ display:flex; flex-direction:column; gap:8px; width:100%; margin:8px 0 4px; max-height:260px; overflow-y:auto; }
+  .lock-item{ border:1px solid var(--line); border-radius:6px; padding:10px; text-align:center;
+    font-weight:600; color:var(--steel); transition:all 0.12s; }
+  .lock-item.lock-active{ border-color:var(--amber); color:var(--ice); background:rgba(255,176,32,0.18);
+    box-shadow:0 0 0 2px rgba(255,176,32,0.3); }
   .modal-status{ font-family:'Orbitron', sans-serif; font-size:16px; color:var(--amber); min-height:22px; margin-top:6px; text-align:center; }
   .gold-flash{ position:fixed; inset:0; background:radial-gradient(circle, rgba(255,203,99,0.55), transparent 70%);
     pointer-events:none; z-index:80; animation: flashfade 0.7s ease-out forwards; }
@@ -600,15 +616,42 @@ function goldFlash(){
   document.body.appendChild(f); setTimeout(() => f.remove(), 700);
 }
 
+async function announceAndClose(winner, titleText, statusText){
+  const modalRoot = document.getElementById('modal-root');
+  const titleEl = document.getElementById('modal-title');
+  const statusEl = document.getElementById('modal-status');
+  if(titleEl) titleEl.textContent = titleText;
+  if(statusEl) statusEl.textContent = statusText;
+  goldFlash();
+  try{
+    const newHistory = [{ name: winner.name, date: calendarDateStr(), addedBy: winner.addedBy || null, periodKey: periodStr() }, ...(state.history || [])].slice(0, 10);
+    await docRef.update({ history: newHistory });
+  }catch(e){ console.error(e); }
+  setTimeout(() => { modalRoot.innerHTML = ''; spinning = false; render(); }, 1500);
+}
+
 function openDecisionModal(){
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
   if(spinning || list.length < 2 || uniqueVoterCount() < MIN_VOTERS) return;
-
   spinning = true;
+
+  const maxVotes = Math.max(...list.map(r => r.votes));
+  const tied = list.filter(r => r.votes === maxVotes);
+
+  if(tied.length === 1){
+    runWheelToWinner(list, tied[0]);
+  } else if(tied.length === 2){
+    runCoinFlip(tied[0], tied[1]);
+  } else {
+    runRadarLock(tied);
+  }
+}
+
+function runWheelToWinner(list, winner){
   const rotation = window.__wheelRotation || 0;
   const modalRoot = document.getElementById('modal-root');
   modalRoot.innerHTML = `
-    <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-overlay">
       <div class="modal-card">
         <div class="modal-title" id="modal-title">Estrazione in corso…</div>
         ${buildWheelMarkup(list, rotation)}
@@ -617,10 +660,7 @@ function openDecisionModal(){
     </div>`;
 
   const n = list.length, seg = 360 / n;
-  const pool = [];
-  list.forEach((r, i) => { const w = r.votes + 1; for(let k=0;k<w;k++) pool.push(i); });
-  const winnerIndex = pool[Math.floor(Math.random()*pool.length)];
-  const winner = list[winnerIndex];
+  const winnerIndex = list.findIndex(r => r.id === winner.id);
   const segMid = winnerIndex * seg + seg/2;
   const baseTurns = 5 * 360;
   const targetWithinCircle = (360 - segMid) % 360;
@@ -633,19 +673,70 @@ function openDecisionModal(){
     if(wheelEl) wheelEl.style.transform = `rotate(${newRotation}deg)`;
   }, 250);
 
-  setTimeout(async () => {
+  setTimeout(() => {
     window.__wheelRotation = newRotation;
-    const titleEl = document.getElementById('modal-title');
-    const statusEl = document.getElementById('modal-status');
-    if(titleEl) titleEl.textContent = 'Missione assegnata';
-    if(statusEl) statusEl.textContent = '🎯 ' + winner.name;
-    goldFlash();
-    try{
-      const newHistory = [{ name: winner.name, date: calendarDateStr(), addedBy: winner.addedBy || null, periodKey: periodStr() }, ...(state.history || [])].slice(0, 10);
-      await docRef.update({ history: newHistory });
-    }catch(e){ console.error(e); }
-    setTimeout(() => { modalRoot.innerHTML = ''; spinning = false; render(); }, 1500);
+    announceAndClose(winner, 'Missione assegnata', '🎯 ' + winner.name);
   }, 250 + 3600);
+}
+
+function runCoinFlip(a, b){
+  const modalRoot = document.getElementById('modal-root');
+  modalRoot.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title" id="modal-title">Pareggio: lancio della moneta…</div>
+        <div class="coin-wrap">
+          <div class="coin" id="coin-el">
+            <div class="coin-face front">${escapeHtml(a.name)}</div>
+            <div class="coin-face back">${escapeHtml(b.name)}</div>
+          </div>
+        </div>
+        <div class="modal-status" id="modal-status"></div>
+      </div>
+    </div>`;
+  const heads = Math.random() < 0.5;
+  const winner = heads ? a : b;
+  const baseSpins = 6 * 360;
+  const target = baseSpins + (heads ? 0 : 180);
+  setTimeout(() => {
+    const coinEl = document.getElementById('coin-el');
+    if(coinEl) coinEl.style.transform = `rotateY(${target}deg)`;
+  }, 200);
+  setTimeout(() => {
+    announceAndClose(winner, 'La moneta ha deciso', (heads ? '🪙 Testa: ' : '🪙 Croce: ') + winner.name);
+  }, 200 + 2200);
+}
+
+function runRadarLock(tied){
+  const modalRoot = document.getElementById('modal-root');
+  const winnerIdx = Math.floor(Math.random() * tied.length);
+  modalRoot.innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title" id="modal-title">Pareggio a ${tied.length}: aggancio radar in corso…</div>
+        <div class="lock-list" id="lock-list">
+          ${tied.map((r,i) => `<div class="lock-item" data-i="${i}">${escapeHtml(r.name)}</div>`).join('')}
+        </div>
+        <div class="modal-status" id="modal-status"></div>
+      </div>
+    </div>`;
+  let step = 0;
+  const totalSteps = 22;
+  function tick(){
+    const els = Array.from(document.querySelectorAll('.lock-item'));
+    els.forEach(el => el.classList.remove('lock-active'));
+    const idx = step < totalSteps - 1 ? step % tied.length : winnerIdx;
+    if(els[idx]) els[idx].classList.add('lock-active');
+    step++;
+    if(step < totalSteps){
+      const delay = 60 + Math.pow(step, 1.9) * 1.3;
+      setTimeout(tick, delay);
+    } else {
+      const winner = tied[winnerIdx];
+      announceAndClose(winner, 'Bersaglio agganciato', '🔒 ' + winner.name);
+    }
+  }
+  tick();
 }
 
 /* ---- init ---- */
