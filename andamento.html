@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andamento — Dove pranziamo?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  :root{
+    --sky:#0E1A2B; --panel:#142338; --panel-light:#1B2E48;
+    --amber:#FFB020; --red:#E8432F; --steel:#8FA6BE; --ice:#EAF1F7;
+    --line: rgba(143,166,190,0.28);
+  }
+  body{
+    background: radial-gradient(ellipse at 50% -10%, #1C3350 0%, var(--sky) 55%);
+    color:var(--ice); font-family:'Rajdhani', sans-serif; min-height:100vh; margin:0; padding:0 0 40px;
+  }
+  .sheet{ width:100%; max-width:640px; margin:0 auto; background:var(--panel); border:1px solid var(--line);
+    padding:18px 18px 24px; box-shadow:0 20px 60px rgba(0,0,0,0.5); min-height:100vh; }
+  @media (min-width:680px){ body{ padding-top:24px; } .sheet{ border-radius:12px; min-height:auto; } }
+
+  .back-link{ display:inline-block; font-size:13px; color:var(--amber); text-decoration:none; margin-bottom:12px; }
+  h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(20px,5.5vw,25px); margin:0 0 4px; }
+  .sub{ color:var(--steel); font-size:14px; margin:0 0 18px; }
+  .chart-wrap{ background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:8px; padding:14px 10px 6px; }
+  .empty{ padding:30px 10px; color:var(--steel); text-align:center; font-size:14.5px; }
+  .winners{ margin-top:22px; }
+  .winners h2{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14px; margin:0 0 8px; border-bottom:1px solid var(--line); padding-bottom:8px; }
+  .wrow{ display:flex; justify-content:space-between; font-size:14px; padding:7px 0; border-bottom:1px dashed var(--line); }
+  .wrow:last-child{ border-bottom:none; }
+  .wrow .d{ color:var(--steel); }
+  .wrow .n{ font-weight:600; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <a class="back-link" href="index.html">← Torna alla base</a>
+  <h1>Andamento ultimi 30 giorni</h1>
+  <p class="sub">Voti totali per ristorante, giorno per giorno.</p>
+  <div class="chart-wrap">
+    <canvas id="chart" height="220"></canvas>
+    <p class="empty" id="empty-msg" style="display:none;">Non ci sono ancora dati sufficienti: torna dopo qualche giorno di voti.</p>
+  </div>
+  <div class="winners" id="winners-block" style="display:none;">
+    <h2>Chi ha vinto la ruota</h2>
+    <div id="winners-list"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+/* ======================================================
+   INCOLLA QUI LA STESSA CONFIGURAZIONE FIREBASE DI index.html
+   ====================================================== */
+const firebaseConfig = {
+  apiKey: "INCOLLA_QUI", authDomain: "INCOLLA_QUI", projectId: "INCOLLA_QUI",
+  storageBucket: "INCOLLA_QUI", messagingSenderId: "INCOLLA_QUI", appId: "INCOLLA_QUI"
+};
+/* ====================================================== */
+
+const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
+
+if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  db.collection('lunch').doc('dailyLog').get().then(snap => {
+    const days = (snap.exists && snap.data().days) ? snap.data().days : [];
+    days.sort((a,b) => a.date.localeCompare(b.date));
+
+    if(days.length === 0){
+      document.getElementById('empty-msg').style.display = 'block';
+      return;
+    }
+
+    const names = Array.from(new Set(days.flatMap(d => Object.keys(d.tallies || {}))));
+    const labels = days.map(d => d.date.slice(5));
+
+    const datasets = names.map((name, i) => ({
+      label: name,
+      data: days.map(d => (d.tallies && d.tallies[name]) || 0),
+      borderColor: PALETTE[i % PALETTE.length],
+      backgroundColor: PALETTE[i % PALETTE.length],
+      tension: 0.25,
+      spanGaps: true
+    }));
+
+    new Chart(document.getElementById('chart'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top', labels: { color: '#EAF1F7', font: { family: 'Rajdhani' } } }
+        },
+        scales: {
+          x: { ticks: { color: '#8FA6BE' }, grid: { color: 'rgba(143,166,190,0.15)' } },
+          y: { beginAtZero: true, ticks: { color: '#8FA6BE', stepSize: 1 }, grid: { color: 'rgba(143,166,190,0.15)' } }
+        }
+      }
+    });
+
+    const winners = days.filter(d => d.winner).slice(-10).reverse();
+    if(winners.length){
+      document.getElementById('winners-block').style.display = 'block';
+      document.getElementById('winners-list').innerHTML = winners.map(w =>
+        `<div class="wrow"><span class="d">${w.date}</span><span class="n">${w.winner}</span></div>`
+      ).join('');
+    }
+  }).catch(err => {
+    console.error(err);
+    document.getElementById('empty-msg').style.display = 'block';
+  });
+} else {
+  document.getElementById('empty-msg').textContent = 'Configurazione Firebase mancante in questo file.';
+  document.getElementById('empty-msg').style.display = 'block';
+}
+</script>
+</body>
+</html>
