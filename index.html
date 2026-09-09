@@ -5,109 +5,149 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dove pranziamo?</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap');
-
-  *{box-sizing:border-box;}
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;}
+  :root{
+    --sky:#0E1A2B; --panel:#142338; --panel-light:#1B2E48;
+    --amber:#FFB020; --red:#E8432F; --steel:#8FA6BE; --ice:#EAF1F7;
+    --line: rgba(143,166,190,0.28);
+  }
   body{
-    background:#1E2A22;
-    color:#2B2118;
-    font-family:'Work Sans', sans-serif;
-    min-height:100vh;
-    display:flex;
-    justify-content:center;
-    padding:32px 16px 80px;
+    background: radial-gradient(ellipse at 50% -10%, #1C3350 0%, var(--sky) 55%);
+    color:var(--ice); font-family:'Rajdhani', sans-serif; min-height:100vh; margin:0;
+    padding:0 0 max(24px, env(safe-area-inset-bottom));
   }
   .sheet{
-    width:100%;
-    max-width:640px;
-    background:#F7F2E7;
-    border-radius:6px;
-    padding:36px 28px 28px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    width:100%; max-width:520px; margin:0 auto; background:var(--panel);
+    border:1px solid var(--line); border-radius:0; padding:0 0 20px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5); overflow:hidden; min-height:100vh;
   }
-  h1{
-    font-family:'Fraunces', serif;
-    font-weight:600;
-    font-size:34px;
-    margin:0 0 4px;
-    letter-spacing:-0.01em;
-  }
-  .sub{ color:#5C4E3F; font-size:15px; margin:0 0 28px; max-width:40ch; }
-  .reveal{
-    border:1px solid rgba(43,33,24,0.18);
-    border-radius:4px;
-    padding:22px 20px;
-    margin-bottom:28px;
-    text-align:center;
-    background:rgba(255,255,255,0.35);
-  }
-  .reveal .label{ font-size:13px; color:#5C4E3F; margin-bottom:6px; }
-  .reveal .pick{ font-family:'Fraunces', serif; font-size:28px; font-weight:500; min-height:38px; }
-  .reveal .pick.spinning{ color:#5C4E3F; }
-  button{ font-family:'Work Sans', sans-serif; cursor:pointer; border:none; }
-  .decide-btn{
-    margin-top:14px; background:#B23A2E; color:#F7F2E7; font-size:14px;
-    font-weight:500; padding:10px 22px; border-radius:4px;
-  }
-  .decide-btn:active{transform:scale(0.98);}
-  .decide-btn:disabled{opacity:0.5;cursor:default;}
-  .menu-header{
-    display:flex; justify-content:space-between; align-items:baseline;
-    border-bottom:1px solid rgba(43,33,24,0.18); padding-bottom:8px; margin-bottom:4px;
-  }
-  .menu-header h2{ font-family:'Fraunces', serif; font-weight:500; font-size:18px; margin:0; }
-  .menu-header span{ font-size:12px; color:#5C4E3F; }
-  .item{
-    display:flex; align-items:center; gap:10px; padding:14px 0;
-    border-bottom:1px dotted rgba(43,33,24,0.18);
-  }
-  .item:last-child{border-bottom:none;}
-  .item .name-wrap{flex:1;min-width:0;}
-  .item .name{ font-size:16px; font-weight:500; }
-  .item .note{ font-size:13px; color:#5C4E3F; margin-top:1px; }
-  .item .votes{ font-family:'Fraunces', serif; font-size:15px; min-width:22px; text-align:center; }
-  .vote-btn{
-    background:transparent; border:1px solid rgba(43,33,24,0.18); border-radius:50%;
-    width:34px; height:34px; font-size:16px; color:#B23A2E;
-    display:flex; align-items:center; justify-content:center; flex-shrink:0;
-  }
-  .vote-btn.voted{ background:#B23A2E; color:#F7F2E7; border-color:#B23A2E; }
-  .remove-btn{ background:transparent; color:#5C4E3F; font-size:12px; padding:2px 4px; flex-shrink:0; }
-  .add-row{ display:flex; gap:8px; margin-top:16px; }
-  .add-row input{
-    flex:1; font-family:'Work Sans', sans-serif; font-size:14px; padding:10px 12px;
-    border:1px solid rgba(43,33,24,0.18); border-radius:4px; background:#fff; color:#2B2118; min-width:0;
-  }
-  .add-row input:focus{outline:2px solid #7C9070;outline-offset:1px;}
-  .add-btn{ background:#7C9070; color:#F7F2E7; font-size:20px; width:40px; border-radius:4px; flex-shrink:0; }
-  .empty{ padding:20px 0; color:#5C4E3F; font-size:14px; text-align:center; }
-  .error{ color:#B23A2E; font-size:13px; margin-top:6px; display:none; }
-  .history{ margin-top:26px; padding-top:14px; border-top:1px solid rgba(43,33,24,0.18); font-size:13px; color:#5C4E3F; }
-  .history strong{color:#2B2118;}
-  .name-gate{ text-align:center; padding:20px 0; }
-  .name-gate input{ display:block; margin:14px auto 10px; text-align:center; max-width:220px; }
-  .name-gate button{ background:#B23A2E; color:#F7F2E7; padding:9px 20px; border-radius:4px; font-size:14px; }
-  .setup-note{
-    max-width:640px; width:100%; margin:0 auto 16px; background:#F7F2E7; color:#2B2118;
-    padding:16px 20px; border-radius:6px; font-size:13px; line-height:1.5;
-  }
+  @media (min-width:560px){ body{ padding-top:24px; } .sheet{ border-radius:12px; min-height:auto; } }
+
+  .runway{ position:relative; height:56px; border-bottom:1px solid var(--line); overflow:hidden;
+    background:linear-gradient(180deg, rgba(255,176,32,0.06), transparent); }
+  .path-line{ position:absolute; left:0; right:0; top:28px; height:0; border-top:2px dashed rgba(143,166,190,0.35); }
+  .jet{ position:absolute; top:14px; font-size:22px; left:-40px; animation: fly 7s linear infinite;
+    filter: drop-shadow(0 0 6px rgba(255,176,32,0.5)); }
+  @keyframes fly{ 0%{ left:-40px; } 100%{ left:105%; } }
+
+  .header-text{ padding:16px 18px 2px; }
+  .header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(22px, 6vw, 27px); margin:0 0 6px; color:var(--ice); }
+  .sub{ color:var(--steel); font-size:14.5px; margin:0 0 4px; line-height:1.4; }
+  .nav-link{ display:inline-flex; align-items:center; gap:7px; margin-top:8px; margin-right:8px; font-size:13px; color:var(--amber); text-decoration:none; border:1px solid var(--line); border-radius:6px; padding:6px 10px; white-space:nowrap; }
+  .nav-link svg{ width:15px; height:15px; flex-shrink:0; }
+
+  .body-pad{ padding:6px 18px 0; }
+
+  .readout{ display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border:1px solid var(--line); border-radius:6px; padding:11px 14px; margin:12px 0 18px;
+    background:rgba(255,176,32,0.04); }
+  .readout .rlabel{ font-size:12px; color:var(--steel); flex-shrink:0; }
+  .readout .rvalue{ font-family:'Orbitron', sans-serif; font-size:14.5px; color:var(--amber); font-weight:700;
+    text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .wheel-zone{ display:flex; flex-direction:column; align-items:center; padding:4px 0 22px; }
+  .wheel-wrap{ position:relative; width:min(72vw, 250px); height:min(72vw, 250px); margin-bottom:16px; }
+  .pointer{ position:absolute; top:-13px; left:50%; transform:translateX(-50%); width:0; height:0;
+    border-left:13px solid transparent; border-right:13px solid transparent; border-top:20px solid var(--amber);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); z-index:3; }
+  .wheel{ width:100%; height:100%; border-radius:50%; position:relative; border:4px solid var(--panel-light);
+    box-shadow: 0 0 0 2px var(--amber), inset 0 0 30px rgba(0,0,0,0.4);
+    transition: transform 3.6s cubic-bezier(0.12,0.72,0.15,1); }
+  .wheel .slice-label{ position:absolute; top:50%; left:50%; width:50%; height:2px; transform-origin:0 0;
+    display:flex; align-items:center; font-size:10.5px; font-weight:600; color:#0E1A2B;
+    padding-left:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96px; }
+  .hub{ position:absolute; top:50%; left:50%; width:66px; height:66px; transform:translate(-50%,-50%);
+    border-radius:50%; background:radial-gradient(circle at 35% 30%, #FFCB63, var(--amber) 70%);
+    border:3px solid var(--panel); box-shadow:0 4px 14px rgba(0,0,0,0.5);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    cursor:pointer; z-index:4; font-family:'Orbitron', sans-serif; font-size:10.5px; font-weight:800;
+    color:#241705; text-align:center; line-height:1.15; user-select:none; }
+  .hub:active{ transform:translate(-50%,-50%) scale(0.96); }
+  .hub.spinning{ opacity:0.85; cursor:default; }
+  .hub.disabled{ opacity:0.4; cursor:default; }
+  .hub .flame{ font-size:14px; }
+
+  .winner-banner{ font-family:'Orbitron', sans-serif; font-size:18px; font-weight:700; color:var(--amber);
+    min-height:24px; text-align:center; padding:0 12px; }
+  .winner-sub{ font-size:12.5px; color:var(--steel); margin-top:2px; text-align:center; padding:0 12px; }
+
+  .section-head{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line);
+    padding-bottom:8px; margin:4px 0 2px; gap:8px; }
+  .section-head h2{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14.5px; margin:0; color:var(--ice); }
+  .section-head .who{ font-size:11.5px; color:var(--steel); }
+  .toggle-add{ background:var(--panel-light); border:1px solid var(--line); color:var(--amber);
+    width:30px; height:30px; border-radius:50%; font-size:17px; line-height:1; cursor:pointer; flex-shrink:0; }
+
+  .item{ display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px dashed var(--line); }
+  .item:last-child{ border-bottom:none; }
+  .item .name-wrap{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .item .name{ font-size:16px; font-weight:600; overflow-wrap:break-word; }
+  .perm-badge{ font-size:10.5px; color:var(--steel); border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
+  .item .votes{ font-family:'Orbitron', sans-serif; font-size:13.5px; color:var(--amber); min-width:34px; text-align:center; }
+  .vote-btn{ background:transparent; border:1px solid var(--line); border-radius:50%; width:40px; height:40px;
+    font-size:16px; color:var(--amber); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .vote-btn.voted{ background:var(--amber); color:#241705; border-color:var(--amber); }
+  .vote-btn.maxed{ opacity:0.35; }
+  .vote-btn:disabled{ opacity:0.4; }
+  .remove-btn{ background:transparent; color:var(--red); font-size:18px; font-weight:700; padding:6px 4px;
+    flex-shrink:0; border:1px solid var(--line); border-radius:50%; width:34px; height:34px; cursor:pointer; }
+  .empty{ padding:16px 0; color:var(--steel); font-size:14px; text-align:center; }
+  .limit-note{ font-size:12px; color:var(--steel); margin-top:10px; text-align:center; }
+  .remove-hint{ font-size:12px; color:var(--steel); margin-top:8px; text-align:center; }
+
+  .add-row{ display:flex; gap:8px; margin-top:14px; }
+  .add-row input{ flex:1; font-family:'Rajdhani', sans-serif; font-size:16px; padding:11px 12px;
+    border:1px solid var(--line); border-radius:6px; background:#0E1A2B; color:var(--ice); min-width:0; }
+  .add-row input::placeholder{ color:var(--steel); }
+  .add-row input:focus{ outline:2px solid var(--amber); outline-offset:1px; }
+  .add-btn{ background:var(--red); color:var(--ice); font-size:20px; width:46px; border-radius:6px; flex-shrink:0; border:none; cursor:pointer; }
+  .add-btn:disabled{ opacity:0.4; }
+  .error{ color:var(--red); font-size:13px; margin-top:6px; display:none; }
+
+  .log{ margin-top:20px; padding-top:14px; border-top:1px solid var(--line); font-size:13px; color:var(--steel); }
+  .log strong{ color:var(--ice); }
+
+  .name-gate{ text-align:center; padding:12px 4px 4px; }
+  .name-gate p{ font-size:15px; color:var(--steel); margin:0; }
+  .name-gate input{ display:block; margin:14px auto 10px; text-align:center; max-width:220px; width:100%;
+    font-family:'Rajdhani', sans-serif; font-size:16px; padding:11px 12px; border:1px solid var(--line);
+    border-radius:6px; background:#0E1A2B; color:var(--ice); }
+  .name-gate button{ background:var(--amber); color:#241705; padding:11px 26px; border-radius:6px; font-size:15px;
+    font-weight:700; border:none; cursor:pointer; font-family:'Rajdhani', sans-serif; }
+  .setup-note{ max-width:520px; width:100%; margin:0 auto 16px; background:var(--panel); color:var(--ice);
+    border:1px solid var(--amber); padding:16px 20px; border-radius:8px; font-size:13px; line-height:1.5; }
 </style>
 </head>
 <body>
 <div id="setup-warning"></div>
 <div class="sheet" id="app">
-  <h1>Dove pranziamo?</h1>
-  <p class="sub">Proponete un posto, votate, e se proprio non decidete, lasciate scegliere a sorte.</p>
-  <div id="content">Caricamento…</div>
+  <div class="runway"><div class="path-line"></div><div class="jet">✈️</div></div>
+  <div class="header-text">
+    <div class="header-row">
+      <div>
+        <h1>Dove pranziamo?</h1>
+        <p class="sub">Base operativa mensa: proponi il bersaglio, l'equipaggio vota, e se il consenso non decolla si passa alla ruota.</p>
+      </div>
+    </div>
+    <a class="nav-link" href="https://www.oggiamensa.it/" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+      Menù mensa oggi
+    </a>
+    <a class="nav-link" href="andamento.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      Andamento 30 giorni
+    </a>
+  </div>
+  <div class="body-pad" id="content">Caricamento…</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================
-   1) INCOLLA QUI SOTTO LA TUA CONFIGURAZIONE FIREBASE
-   (la trovi in Firebase Console > Impostazioni progetto > Le tue app)
    ====================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
@@ -120,6 +160,17 @@ const firebaseConfig = {
 };
 /* ====================================================== */
 
+const MAX_VOTES = 9;
+const MAX_RESTAURANTS = 12;
+const MIN_NAME_LEN = 2;
+const MAX_NAME_LEN = 40;
+const REMOVE_FROM_HOUR = 14;
+const PERMANENT = [
+  { id: 'perm-mensa', name: 'Mensa' },
+  { id: 'perm-mercato', name: 'MercaTò' }
+];
+const PERMANENT_IDS = PERMANENT.map(p => p.id);
+
 let db = null;
 let configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
 
@@ -128,40 +179,74 @@ if(configOk){
   db = firebase.firestore();
 } else {
   document.getElementById('setup-warning').innerHTML =
-    '<div class="setup-note"><strong>Configurazione mancante.</strong> Apri index.html e incolla la tua configurazione Firebase nella sezione indicata in cima al file. Vedi le istruzioni ricevute in chat.</div>';
+    '<div class="setup-note"><strong>Configurazione mancante.</strong> Incolla la tua configurazione Firebase nella sezione indicata in cima al file.</div>';
 }
 
 const docRef = configOk ? db.collection('lunch').doc('shared') : null;
+const logRef = configOk ? db.collection('lunch').doc('dailyLog') : null;
 
 let state = { restaurants: {}, history: [], voteDate: null };
 let myName = localStorage.getItem('lunch-my-name') || null;
 let myVotes = [];
 let spinning = false;
+let lastWinnerName = null;
+let busy = false;
+let addFormOpen = false;
+
+const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+function canRemoveNow(){ return new Date().getHours() >= REMOVE_FROM_HOUR; }
 
 function loadMyVotes(){
   try{
     const raw = localStorage.getItem('lunch-my-votes');
-    if(raw){
-      const parsed = JSON.parse(raw);
-      myVotes = parsed.date === todayStr() ? parsed.ids : [];
-    }
+    if(raw){ const parsed = JSON.parse(raw); myVotes = parsed.date === todayStr() ? parsed.ids : []; }
   }catch(e){ myVotes = []; }
 }
+function saveMyVotes(){ localStorage.setItem('lunch-my-votes', JSON.stringify({date: todayStr(), ids: myVotes})); }
 
-function saveMyVotes(){
-  localStorage.setItem('lunch-my-votes', JSON.stringify({date: todayStr(), ids: myVotes}));
+async function appendDailyLog(date, tallies, winner){
+  if(!date) return;
+  try{
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(logRef);
+      const data = snap.exists ? snap.data() : { days: [] };
+      const days = data.days || [];
+      if(!days.some(d => d.date === date)){
+        days.push({ date, tallies, winner: winner || null });
+      }
+      tx.set(logRef, { days: days.slice(-30) });
+    });
+  }catch(e){ console.error('Errore log giornaliero', e); }
 }
 
 async function ensureFreshDay(data){
   if(data.voteDate !== todayStr()){
+    const prevDate = data.voteDate;
+    if(prevDate){
+      const tallies = {};
+      Object.values(data.restaurants || {}).forEach(r => { tallies[r.name] = (tallies[r.name]||0) + (r.votes||0); });
+      let winner = null;
+      if(data.history && data.history[0] && data.history[0].date === prevDate) winner = data.history[0].name;
+      await appendDailyLog(prevDate, tallies, winner);
+    }
     const resetRestaurants = {};
-    Object.keys(data.restaurants || {}).forEach(id => {
-      resetRestaurants[id] = { ...data.restaurants[id], votes: 0 };
-    });
-    await docRef.set({ restaurants: resetRestaurants, history: data.history || [], voteDate: todayStr() });
-    return { restaurants: resetRestaurants, history: data.history || [], voteDate: todayStr() };
+    Object.keys(data.restaurants || {}).forEach(id => { resetRestaurants[id] = { ...data.restaurants[id], votes: 0 }; });
+    const fresh = { restaurants: resetRestaurants, history: data.history || [], voteDate: todayStr() };
+    await docRef.set(fresh);
+    return fresh;
+  }
+  return data;
+}
+
+async function ensurePermanentExist(data){
+  const missing = {};
+  PERMANENT.forEach(p => { if(!data.restaurants || !data.restaurants[p.id]) missing[`restaurants.${p.id}`] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
+  if(Object.keys(missing).length){
+    await docRef.update(missing);
+    const snap = await docRef.get();
+    return snap.data();
   }
   return data;
 }
@@ -172,130 +257,214 @@ function escapeHtml(s){
 
 function render(){
   const el = document.getElementById('content');
-
-  if(!configOk){
-    el.innerHTML = '<p class="empty">Completa prima la configurazione (vedi avviso qui sopra).</p>';
-    return;
-  }
+  if(!configOk){ el.innerHTML = '<p class="empty">Completa prima la configurazione (vedi avviso qui sopra).</p>'; return; }
 
   if(!myName){
     el.innerHTML = `
       <div class="name-gate">
-        <p style="font-size:14px;color:#5C4E3F;margin:0;">Come ti chiami, per capire chi ha votato cosa?</p>
+        <p>Come ti chiami, per capire chi ha votato cosa?</p>
         <input type="text" id="name-input" placeholder="Il tuo nome" maxlength="24">
-        <div><button id="name-save">Comincia</button></div>
+        <div><button id="name-save">Imbarco</button></div>
         <p class="error" id="name-error">Scrivi un nome prima di continuare.</p>
       </div>`;
     document.getElementById('name-save').onclick = () => {
       const val = document.getElementById('name-input').value.trim();
       if(!val){ document.getElementById('name-error').style.display = 'block'; return; }
-      myName = val;
-      localStorage.setItem('lunch-my-name', val);
-      render();
+      myName = val; localStorage.setItem('lunch-my-name', val); render();
     };
-    document.getElementById('name-input').addEventListener('keydown', e => {
-      if(e.key === 'Enter') document.getElementById('name-save').click();
-    });
+    document.getElementById('name-input').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('name-save').click(); });
     return;
   }
 
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
   const sorted = [...list].sort((a,b) => b.votes - a.votes);
-  const topPick = spinning ? '…' : (sorted[0] ? sorted[0].name : '—');
+  const leader = sorted[0];
+  const removeOk = canRemoveNow();
+
+  const readoutHtml = leader
+    ? `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">${escapeHtml(leader.name)} · ${leader.votes} ${leader.votes===1?'voto':'voti'}</span></div>`
+    : `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">nessun bersaglio ancora</span></div>`;
+
+  const wheelHtml = buildWheelHtml(list);
 
   let itemsHtml = '';
   if(list.length === 0){
-    itemsHtml = '<p class="empty">Nessun posto proposto ancora. Aggiungine uno qui sotto.</p>';
+    itemsHtml = '<p class="empty">Nessuna missione proposta ancora.</p>';
   } else {
     itemsHtml = sorted.map(r => {
       const voted = myVotes.includes(r.id);
+      const maxed = r.votes >= MAX_VOTES && !voted;
+      const showRemove = !r.permanent && removeOk;
       return `
         <div class="item">
-          <button class="vote-btn ${voted ? 'voted' : ''}" data-id="${r.id}" aria-label="Vota ${escapeHtml(r.name)}">${voted ? '✓' : '+'}</button>
+          <button class="vote-btn ${voted ? 'voted' : ''} ${maxed ? 'maxed' : ''}" data-id="${r.id}" ${maxed ? 'disabled' : ''} ${busy?'disabled':''} aria-label="Vota ${escapeHtml(r.name)}">${voted ? '✓' : '+'}</button>
           <div class="name-wrap">
             <div class="name">${escapeHtml(r.name)}</div>
+            ${r.permanent ? '<span class="perm-badge">fissa</span>' : ''}
           </div>
-          <div class="votes">${r.votes}</div>
-          <button class="remove-btn" data-remove="${r.id}" aria-label="Rimuovi ${escapeHtml(r.name)}">rimuovi</button>
+          <div class="votes">${r.votes}/${MAX_VOTES}</div>
+          ${showRemove ? `<button class="remove-btn" data-remove="${r.id}" data-name="${escapeHtml(r.name)}" ${busy?'disabled':''} aria-label="Rimuovi ${escapeHtml(r.name)}">−</button>` : ''}
         </div>`;
     }).join('');
   }
 
   const historyHtml = state.history && state.history.length
-    ? `<div class="history">Ultima scelta: <strong>${escapeHtml(state.history[0].name)}</strong> (${state.history[0].date})</div>`
-    : '';
+    ? `<div class="log">Ultima missione compiuta: <strong>${escapeHtml(state.history[0].name)}</strong> (${state.history[0].date})</div>` : '';
+
+  const limitNote = list.length >= MAX_RESTAURANTS
+    ? `<p class="limit-note">Raggiunto il massimo di ${MAX_RESTAURANTS} proposte: rimuovine una per aggiungerne un'altra.</p>` : '';
+
+  const nonPermCount = list.filter(r => !r.permanent).length;
+  const removeHint = !removeOk && nonPermCount > 0
+    ? `<p class="remove-hint">Le proposte extra si possono rimuovere solo dalle ${REMOVE_FROM_HOUR}:00 in poi, per non alterare il voto in corso.</p>` : '';
+
+  const addRowHtml = addFormOpen ? `
+    <div class="add-row">
+      <input type="text" id="new-name" placeholder="Nome del ristorante" maxlength="${MAX_NAME_LEN}" ${list.length>=MAX_RESTAURANTS || busy ? 'disabled':''}>
+      <button class="add-btn" id="add-btn" aria-label="Aggiungi" ${list.length>=MAX_RESTAURANTS || busy ? 'disabled':''}>+</button>
+    </div>
+    <p class="error" id="add-error"></p>
+    ${limitNote}` : '';
 
   el.innerHTML = `
-    <div class="reveal">
-      <div class="label">Oggi, secondo i voti</div>
-      <div class="pick ${spinning ? 'spinning' : ''}" id="pick-text">${escapeHtml(topPick)}</div>
-      <button class="decide-btn" id="decide-btn" ${list.length === 0 ? 'disabled' : ''}>Decidi tu per noi</button>
+    ${readoutHtml}
+    <div class="wheel-zone">
+      ${wheelHtml}
+      <div class="winner-banner" id="winner-banner">${lastWinnerName ? '🎯 ' + escapeHtml(lastWinnerName) : ''}</div>
+      <div class="winner-sub">${list.length < 2 ? 'Servono almeno due proposte per far girare la ruota' : ''}</div>
     </div>
-    <div class="menu-header">
-      <h2>Proposte</h2>
-      <span>${escapeHtml(myName)}</span>
+    <div class="section-head">
+      <h2>Missioni proposte</h2>
+      <span class="who">${escapeHtml(myName)}</span>
+      <button class="toggle-add" id="toggle-add" aria-label="Aggiungi opzione">${addFormOpen ? '×' : '+'}</button>
     </div>
     ${itemsHtml}
-    <div class="add-row">
-      <input type="text" id="new-name" placeholder="Nome del posto">
-      <button class="add-btn" id="add-btn" aria-label="Aggiungi">+</button>
-    </div>
-    <p class="error" id="add-error">Scrivi un nome prima di aggiungere.</p>
+    ${removeHint}
+    ${addRowHtml}
     ${historyHtml}
   `;
 
   document.querySelectorAll('.vote-btn').forEach(btn => { btn.onclick = () => toggleVote(btn.dataset.id); });
-  document.querySelectorAll('[data-remove]').forEach(btn => { btn.onclick = () => removeRestaurant(btn.dataset.remove); });
-  document.getElementById('add-btn').onclick = addRestaurant;
-  document.getElementById('new-name').addEventListener('keydown', e => { if(e.key === 'Enter') addRestaurant(); });
-  document.getElementById('decide-btn').onclick = spinDecision;
+  document.querySelectorAll('[data-remove]').forEach(btn => { btn.onclick = () => removeRestaurant(btn.dataset.remove, btn.dataset.name); });
+  document.getElementById('toggle-add').onclick = () => { addFormOpen = !addFormOpen; render(); };
+  const addBtn = document.getElementById('add-btn');
+  if(addBtn) addBtn.onclick = addRestaurant;
+  const newNameInput = document.getElementById('new-name');
+  if(newNameInput){ newNameInput.focus(); newNameInput.addEventListener('keydown', e => { if(e.key==='Enter') addRestaurant(); }); }
+
+  const hub = document.getElementById('hub-btn');
+  if(hub) hub.onclick = spinDecision;
+
+  if(spinning){
+    const wheelEl = document.getElementById('wheel-el');
+    if(wheelEl && wheelEl.dataset.targetAngle){
+      requestAnimationFrame(() => { wheelEl.style.transform = `rotate(${wheelEl.dataset.targetAngle}deg)`; });
+    }
+  }
+}
+
+function buildWheelHtml(list){
+  const disabled = busy || list.length < 2;
+  if(list.length === 0){
+    return `<div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="wheel-el" style="background:var(--panel-light);"></div>
+      <div class="hub disabled" id="hub-btn"><span>🎯</span><span>VIA!</span></div></div>`;
+  }
+  const n = list.length; const seg = 360 / n;
+  let gradientParts = []; let labelsHtml = '';
+  list.forEach((r, i) => {
+    const color = PALETTE[i % PALETTE.length];
+    const start = i * seg, end = start + seg;
+    gradientParts.push(`${color} ${start}deg ${end}deg`);
+    const mid = start + seg/2;
+    labelsHtml += `<div class="slice-label" style="transform:rotate(${mid}deg);">${escapeHtml(r.name)}</div>`;
+  });
+  const bg = `conic-gradient(${gradientParts.join(',')})`;
+  const rotation = window.__wheelRotation || 0;
+  return `<div class="wheel-wrap"><div class="pointer"></div>
+    <div class="wheel" id="wheel-el" style="background:${bg}; transform:rotate(${rotation}deg);">${labelsHtml}</div>
+    <div class="hub ${spinning ? 'spinning':''} ${disabled && !spinning ? 'disabled':''}" id="hub-btn">
+      <span class="flame">${spinning ? '🔥' : '🎯'}</span><span>${spinning ? '...' : 'VIA!'}</span>
+    </div></div>`;
 }
 
 async function addRestaurant(){
+  if(busy) return;
   const input = document.getElementById('new-name');
-  const val = input.value.trim();
-  if(!val){ document.getElementById('add-error').style.display = 'block'; return; }
+  const errEl = document.getElementById('add-error');
+  const val = input.value.trim().replace(/\s+/g,' ');
+  errEl.style.display = 'none';
+  const currentList = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
+  if(currentList.length >= MAX_RESTAURANTS){ errEl.textContent = `Massimo ${MAX_RESTAURANTS} proposte contemporanee.`; errEl.style.display='block'; return; }
+  if(val.length < MIN_NAME_LEN){ errEl.textContent = `Il nome deve avere almeno ${MIN_NAME_LEN} caratteri.`; errEl.style.display='block'; return; }
+  if(val.length > MAX_NAME_LEN){ errEl.textContent = `Il nome è troppo lungo (max ${MAX_NAME_LEN} caratteri).`; errEl.style.display='block'; return; }
+  if(currentList.some(r => r.name.trim().toLowerCase() === val.toLowerCase())){ errEl.textContent = 'C\'è già una proposta con questo nome.'; errEl.style.display='block'; return; }
+
+  busy = true; render();
   const id = 'r' + Date.now() + Math.floor(Math.random()*1000);
-  await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName } });
+  try{ await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName } }); }catch(e){ console.error(e); }
+  busy = false; addFormOpen = false;
 }
 
-async function removeRestaurant(id){
-  await docRef.update({ [`restaurants.${id}`]: firebase.firestore.FieldValue.delete() });
+async function removeRestaurant(id, name){
+  if(busy) return;
+  if(PERMANENT_IDS.includes(id)) return;
+  if(!canRemoveNow()){ alert(`Le rimozioni sono permesse solo dalle ${REMOVE_FROM_HOUR}:00 in poi.`); return; }
+  const ok = window.confirm(`Rimuovere "${name}" dalla lista?`);
+  if(!ok) return;
+  busy = true; render();
+  try{ await docRef.update({ [`restaurants.${id}`]: firebase.firestore.FieldValue.delete() }); }catch(e){ console.error(e); }
+  busy = false;
 }
 
 async function toggleVote(id){
+  if(busy) return;
+  busy = true; render();
   const voted = myVotes.includes(id);
-  const delta = voted ? -1 : 1;
-  myVotes = voted ? myVotes.filter(v => v !== id) : [...myVotes, id];
-  saveMyVotes();
-  await docRef.update({ [`restaurants.${id}.votes`]: firebase.firestore.FieldValue.increment(delta) });
+  try{
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+      const data = snap.data() || {};
+      const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
+      let next = current + (voted ? -1 : 1);
+      next = Math.max(0, Math.min(MAX_VOTES, next));
+      tx.update(docRef, { [`restaurants.${id}.votes`]: next });
+    });
+    myVotes = voted ? myVotes.filter(v => v !== id) : [...myVotes, id];
+    saveMyVotes();
+  }catch(e){ console.error(e); }
+  busy = false;
 }
 
 async function spinDecision(){
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
-  if(spinning || list.length === 0) return;
-  spinning = true;
-  render();
+  if(spinning || busy || list.length < 2) return;
+  const n = list.length, seg = 360 / n;
   const pool = [];
-  list.forEach(r => { const w = r.votes + 1; for(let i=0;i<w;i++) pool.push(r); });
-  const pickText = document.getElementById('pick-text');
-  let ticks = 0;
-  const interval = setInterval(() => {
-    const rand = list[Math.floor(Math.random()*list.length)];
-    if(pickText) pickText.textContent = rand.name;
-    ticks++;
-    if(ticks >= 14){
-      clearInterval(interval);
-      const winner = pool[Math.floor(Math.random()*pool.length)];
-      finishSpin(winner);
-    }
-  }, 90);
-}
+  list.forEach((r, i) => { const w = r.votes + 1; for(let k=0;k<w;k++) pool.push(i); });
+  const winnerIndex = pool[Math.floor(Math.random()*pool.length)];
+  const winner = list[winnerIndex];
+  const segMid = winnerIndex * seg + seg/2;
+  const currentRotation = window.__wheelRotation || 0;
+  const baseTurns = 5 * 360;
+  const targetWithinCircle = (360 - segMid) % 360;
+  const currentMod = ((currentRotation % 360) + 360) % 360;
+  let delta = (targetWithinCircle - currentMod + 360) % 360;
+  const newRotation = currentRotation + baseTurns + delta;
 
-async function finishSpin(winner){
-  const newHistory = [{ name: winner.name, date: todayStr() }, ...(state.history || [])].slice(0, 10);
-  await docRef.update({ history: newHistory });
-  spinning = false;
+  spinning = true; lastWinnerName = null; render();
+  const wheelEl = document.getElementById('wheel-el');
+  wheelEl.dataset.targetAngle = newRotation;
+  requestAnimationFrame(() => { wheelEl.style.transform = `rotate(${newRotation}deg)`; });
+
+  setTimeout(async () => {
+    window.__wheelRotation = newRotation;
+    spinning = false; lastWinnerName = winner.name;
+    try{
+      const newHistory = [{ name: winner.name, date: todayStr() }, ...(state.history || [])].slice(0, 10);
+      await docRef.update({ history: newHistory });
+    }catch(e){ console.error(e); }
+    render();
+  }, 3700);
 }
 
 async function init(){
@@ -304,18 +473,18 @@ async function init(){
 
   const snap = await docRef.get();
   if(!snap.exists){
-    await docRef.set({ restaurants: {}, history: [], voteDate: todayStr() });
+    const restaurants = {};
+    PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
+    const fresh = { restaurants, history: [], voteDate: todayStr() };
+    await docRef.set(fresh);
+    state = fresh;
   } else {
-    state = await ensureFreshDay(snap.data());
+    let data = snap.data();
+    data = await ensurePermanentExist(data);
+    state = await ensureFreshDay(data);
   }
 
-  docRef.onSnapshot(doc => {
-    if(doc.exists){
-      state = doc.data();
-      render();
-    }
-  });
-
+  docRef.onSnapshot(doc => { if(doc.exists){ state = doc.data(); if(!spinning) render(); } });
   render();
 }
 
