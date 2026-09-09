@@ -10,15 +10,26 @@
   html,body{margin:0;}
   :root{
     --sky:#0E1A2B; --panel:#142338; --panel-light:#1B2E48;
-    --amber:#FFB020; --gold:#F3C969; --red:#E8432F; --steel:#8FA6BE; --ice:#EAF1F7;
+    --amber:#FFB020; --gold:#F3C969; --red:#E8432F; --green:#3DDC6E; --steel:#8FA6BE; --ice:#EAF1F7;
     --line: rgba(143,166,190,0.28);
   }
   body{
+    position:relative;
     background: radial-gradient(ellipse at 50% -10%, #1C3350 0%, var(--sky) 55%);
     color:var(--ice); font-family:'Rajdhani', sans-serif; min-height:100vh; margin:0;
     padding:0 0 max(24px, env(safe-area-inset-bottom));
+    overflow-x:hidden;
+  }
+  body::before{
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Cg fill='none' stroke='rgb(143,166,190)' stroke-width='1.1'%3E%3Cpath d='M200 20 L206 60 L206 150 L340 235 L340 252 L207 215 L210 330 L255 375 L255 388 L200 368 L145 388 L145 375 L190 330 L193 215 L60 252 L60 235 L194 150 L194 60 Z'/%3E%3Ccircle cx='200' cy='45' r='6'/%3E%3Cpath d='M180 150 L160 175 L160 195 L194 178'/%3E%3Cpath d='M220 150 L240 175 L240 195 L206 178'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:center 6%; background-size:130% auto;
+    opacity:0.10;
+    -webkit-mask-image: radial-gradient(ellipse 65% 55% at 50% 22%, black 35%, transparent 75%);
+    mask-image: radial-gradient(ellipse 65% 55% at 50% 22%, black 35%, transparent 75%);
   }
   .sheet{
+    position:relative; z-index:1;
     width:100%; max-width:520px; margin:0 auto; background:var(--panel);
     border:1px solid var(--line); border-radius:0; padding:0 0 20px;
     box-shadow:0 20px 60px rgba(0,0,0,0.5); overflow:hidden; min-height:100vh;
@@ -40,21 +51,11 @@
 
   .body-pad{ padding:6px 18px 0; }
 
-  /* ---- medal banner ---- */
-  .medal-banner{
-    position:relative; overflow:hidden;
-    margin:14px 0 10px;
-    border:1px solid var(--gold);
-    border-radius:8px;
-    padding:14px 16px;
-    display:flex; align-items:center; gap:10px;
-    background:linear-gradient(180deg, rgba(243,201,105,0.10), rgba(243,201,105,0.02));
-  }
-  .medal-banner::after{
-    content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
-    background:linear-gradient(100deg, transparent, rgba(255,255,255,0.18), transparent);
-    animation: shine 5s ease-in-out infinite;
-  }
+  .medal-banner{ position:relative; overflow:hidden; margin:14px 0 10px; border:1px solid var(--gold); border-radius:8px;
+    padding:14px 16px; display:flex; align-items:center; gap:10px;
+    background:linear-gradient(180deg, rgba(243,201,105,0.10), rgba(243,201,105,0.02)); }
+  .medal-banner::after{ content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,0.18), transparent); animation: shine 5s ease-in-out infinite; }
   @keyframes shine{ 0%{ left:-60%; } 45%{ left:120%; } 100%{ left:120%; } }
   .medal-banner .laurel{ width:20px; height:34px; color:var(--gold); flex-shrink:0; opacity:0.85; }
   .medal-banner .laurel.right{ transform:scaleX(-1); }
@@ -72,10 +73,8 @@
   .readout .rvalue{ font-family:'Orbitron', sans-serif; font-size:14.5px; color:var(--amber); font-weight:700;
     text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  /* ---- decide control (replaces permanent wheel) ---- */
   .decide-zone{ display:flex; flex-direction:column; align-items:center; padding:6px 0 22px; }
-  .radar-ring{ position:relative; width:112px; height:112px; border-radius:50%;
-    border:1px solid var(--line);
+  .radar-ring{ position:relative; width:112px; height:112px; border-radius:50%; border:1px solid var(--line);
     background: repeating-radial-gradient(circle, transparent 0 14px, rgba(143,166,190,0.07) 15px 16px);
     display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden; }
   .radar-sweep{ position:absolute; inset:0; border-radius:50%;
@@ -92,7 +91,6 @@
   @keyframes pulse-ready{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
   .decide-caption{ font-size:12.5px; color:var(--steel); text-align:center; max-width:240px; }
 
-  /* ---- modal ---- */
   .modal-overlay{ position:fixed; inset:0; background:rgba(6,10,18,0.82); display:flex; align-items:center;
     justify-content:center; z-index:60; padding:20px; backdrop-filter:blur(2px); }
   .modal-card{ background:var(--panel); border:1px solid var(--gold); border-radius:12px; padding:22px 18px 18px;
@@ -111,9 +109,7 @@
     padding-left:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:88px; }
   .wheel-rivet{ position:absolute; top:50%; left:50%; width:22px; height:22px; transform:translate(-50%,-50%);
     border-radius:50%; background:var(--panel); border:3px solid var(--amber); z-index:4; }
-
   .modal-status{ font-family:'Orbitron', sans-serif; font-size:16px; color:var(--amber); min-height:22px; margin-top:6px; text-align:center; }
-
   .gold-flash{ position:fixed; inset:0; background:radial-gradient(circle, rgba(255,203,99,0.55), transparent 70%);
     pointer-events:none; z-index:80; animation: flashfade 0.7s ease-out forwards; }
   @keyframes flashfade{ 0%{opacity:0;} 15%{opacity:1;} 100%{opacity:0;} }
@@ -127,6 +123,9 @@
   .toggle-add{ background:var(--panel-light); border:1px solid var(--line); color:var(--amber);
     width:30px; height:30px; border-radius:50%; font-size:17px; line-height:1; cursor:pointer; flex-shrink:0; }
 
+  .vote-status{ font-size:12.5px; color:var(--steel); margin:8px 0 2px; text-align:center; }
+  .vote-status .undo{ color:var(--amber); text-decoration:underline; cursor:pointer; margin-left:6px; }
+
   .item{ display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px dashed var(--line); }
   .item:last-child{ border-bottom:none; }
   .item .name-wrap{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
@@ -135,14 +134,21 @@
   .item .votes{ font-family:'Orbitron', sans-serif; font-size:13.5px; color:var(--amber); min-width:34px; text-align:center; }
   .vote-btn{ background:transparent; border:1px solid var(--line); border-radius:50%; width:40px; height:40px;
     font-size:16px; color:var(--amber); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .vote-btn.pending{ background:rgba(255,176,32,0.32); border-color:var(--amber); color:var(--ice); }
   .vote-btn.voted{ background:var(--amber); color:#241705; border-color:var(--amber); }
-  .vote-btn.maxed{ opacity:0.35; }
-  .vote-btn:disabled{ opacity:0.4; }
+  .vote-btn.maxed, .vote-btn:disabled{ opacity:0.35; }
   .remove-btn{ background:transparent; color:var(--red); font-size:18px; font-weight:700; padding:6px 4px;
     flex-shrink:0; border:1px solid var(--line); border-radius:50%; width:34px; height:34px; cursor:pointer; }
   .empty{ padding:16px 0; color:var(--steel); font-size:14px; text-align:center; }
   .limit-note{ font-size:12px; color:var(--steel); margin-top:10px; text-align:center; }
   .remove-hint{ font-size:12px; color:var(--steel); margin-top:8px; text-align:center; }
+
+  .confirm-btn{ display:block; width:100%; margin-top:14px; padding:13px; border-radius:8px; border:none;
+    font-family:'Orbitron', sans-serif; font-weight:800; font-size:16px; letter-spacing:0.05em; cursor:pointer; }
+  .confirm-btn.dark{ background:#16241B; color:#3f5c48; cursor:not-allowed; }
+  .confirm-btn.lit{ background:linear-gradient(180deg,#59E585,var(--green)); color:#062b12;
+    box-shadow:0 0 0 3px rgba(61,220,110,0.28), 0 4px 16px rgba(0,0,0,0.5); animation:pulse-green 1.8s ease-in-out infinite; }
+  @keyframes pulse-green{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.02); } }
 
   .add-row{ display:flex; gap:8px; margin-top:14px; }
   .add-row input{ flex:1; font-family:'Rajdhani', sans-serif; font-size:16px; padding:11px 12px;
@@ -170,7 +176,7 @@
   <div class="runway"><div class="path-line"></div><div class="jet">✈️</div></div>
   <div class="header-text">
     <h1>Dove pranziamo?</h1>
-    <p class="sub">Base operativa mensa: proponi il bersaglio, l'equipaggio vota, e quando siete abbastanza si decide.</p>
+    <p class="sub">Base operativa mensa: proponi il bersaglio, l'equipaggio vota (max 2 scelte a testa), e quando siete abbastanza si decide.</p>
     <a class="nav-link" href="https://www.oggiamensa.it/" target="_blank" rel="noopener noreferrer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
       Menù mensa oggi
@@ -200,11 +206,13 @@ const firebaseConfig = {
 };
 /* ====================================================== */
 
-const MAX_VOTES = 9;
+const MAX_VOTES = 9;             // tetto voti per singolo ristorante
+const MAX_PICKS = 2;             // scelte massime per persona
 const MAX_RESTAURANTS = 12;
 const MIN_NAME_LEN = 2;
 const MAX_NAME_LEN = 40;
-const REMOVE_FROM_HOUR = 14;
+const REMOVE_FROM_HOUR = 14;     // rimozione sbloccata dalle 14 in poi
+const RESET_HOUR = 14;           // la "giornata di voto" ricomincia alle 14
 const MIN_VOTERS = 4;
 const NAME_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]+$/u;
 const PERMANENT = [
@@ -228,36 +236,36 @@ if(configOk){
 const docRef = configOk ? db.collection('lunch').doc('shared') : null;
 const logRef = configOk ? db.collection('lunch').doc('dailyLog') : null;
 
-let state = { restaurants: {}, history: [], voteDate: null, voters: {} };
+let state = { restaurants: {}, history: [], voteDate: null, voters: {}, voterPicks: {} };
 let myName = localStorage.getItem('lunch-my-name') || null;
-let myVotes = [];
+let pendingSelection = [];   // selezioni non ancora confermate (locali)
 let spinning = false;
 let busy = false;
 let addFormOpen = false;
 
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+/* la "giornata di voto" copre dalle 14:00 di un giorno alle 13:59 del successivo */
+function pad(n){ return String(n).padStart(2,'0'); }
+function periodStr(){
+  const now = new Date();
+  const ref = new Date(now);
+  if(now.getHours() < RESET_HOUR) ref.setDate(ref.getDate() - 1);
+  return `${ref.getFullYear()}-${pad(ref.getMonth()+1)}-${pad(ref.getDate())}`;
+}
+function calendarDateStr(){
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+}
 function canRemoveNow(){ return new Date().getHours() >= REMOVE_FROM_HOUR; }
 function uniqueVoterCount(){ return Object.keys(state.voters || {}).length; }
-
-function loadMyVotes(){
-  try{
-    const raw = localStorage.getItem('lunch-my-votes');
-    if(raw){ const parsed = JSON.parse(raw); myVotes = parsed.date === todayStr() ? parsed.ids : []; }
-  }catch(e){ myVotes = []; }
-}
-function saveMyVotes(){ localStorage.setItem('lunch-my-votes', JSON.stringify({date: todayStr(), ids: myVotes})); }
+function myConfirmedPicks(){ return (state.voterPicks && state.voterPicks[myName]) || null; }
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 /* ---- icons ---- */
-function wheelIconSvg(){
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="2"/></svg>`;
-}
-function exclaimIconSvg(){
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>`;
-}
+function wheelIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="2"/></svg>`; }
+function exclaimIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>`; }
 function laurelSvg(side){
   return `<svg class="laurel ${side}" viewBox="0 0 24 40" fill="none" stroke="currentColor" stroke-width="1.5">
     <path d="M12 38 C 8 30, 8 20, 12 2"/>
@@ -268,33 +276,34 @@ function laurelSvg(side){
   </svg>`;
 }
 
-/* ---- firestore day rollover ---- */
-async function appendDailyLog(date, tallies, winner){
-  if(!date) return;
+/* ---- firestore period rollover ---- */
+async function appendDailyLog(periodKey, tallies, winner){
+  if(!periodKey) return;
   try{
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(logRef);
       const data = snap.exists ? snap.data() : { days: [] };
       const days = data.days || [];
-      if(!days.some(d => d.date === date)) days.push({ date, tallies, winner: winner || null });
+      if(!days.some(d => d.date === periodKey)) days.push({ date: periodKey, tallies, winner: winner || null });
       tx.set(logRef, { days: days.slice(-30) });
     });
   }catch(e){ console.error('Errore log giornaliero', e); }
 }
 
-async function ensureFreshDay(data){
-  if(data.voteDate !== todayStr()){
-    const prevDate = data.voteDate;
-    if(prevDate){
+async function ensureFreshPeriod(data){
+  const current = periodStr();
+  if(data.voteDate !== current){
+    const prevPeriod = data.voteDate;
+    if(prevPeriod){
       const tallies = {};
       Object.values(data.restaurants || {}).forEach(r => { tallies[r.name] = (tallies[r.name]||0) + (r.votes||0); });
       let winner = null;
-      if(data.history && data.history[0] && data.history[0].date === prevDate) winner = data.history[0].name;
-      await appendDailyLog(prevDate, tallies, winner);
+      if(data.history && data.history[0] && data.history[0].periodKey === prevPeriod) winner = data.history[0].name;
+      await appendDailyLog(prevPeriod, tallies, winner);
     }
     const resetRestaurants = {};
     Object.keys(data.restaurants || {}).forEach(id => { resetRestaurants[id] = { ...data.restaurants[id], votes: 0 }; });
-    const fresh = { restaurants: resetRestaurants, history: data.history || [], voters: {}, voteDate: todayStr() };
+    const fresh = { restaurants: resetRestaurants, history: data.history || [], voters: {}, voterPicks: {}, voteDate: current };
     await docRef.set(fresh);
     return fresh;
   }
@@ -305,6 +314,7 @@ async function ensurePermanentExist(data){
   const missing = {};
   PERMANENT.forEach(p => { if(!data.restaurants || !data.restaurants[p.id]) missing[`restaurants.${p.id}`] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
   if(!data.voters) missing['voters'] = {};
+  if(!data.voterPicks) missing['voterPicks'] = {};
   if(Object.keys(missing).length){
     await docRef.update(missing);
     const snap = await docRef.get();
@@ -340,6 +350,8 @@ function render(){
   const leader = sorted[0];
   const removeOk = canRemoveNow();
   const lastWin = state.history && state.history[0];
+  const confirmed = myConfirmedPicks();
+  const votedToday = !!confirmed;
 
   const medalHtml = lastWin ? `
     <div class="medal-banner">
@@ -351,9 +363,7 @@ function render(){
       </div>
       ${laurelSvg('right')}
     </div>` : `
-    <div class="medal-banner empty">
-      <div class="medal-text">Nessuna missione ancora compiuta: vota e poi decidete insieme.</div>
-    </div>`;
+    <div class="medal-banner empty"><div class="medal-text">Nessuna missione ancora compiuta: vota e poi decidete insieme.</div></div>`;
 
   const readoutHtml = leader
     ? `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">${escapeHtml(leader.name)} · ${leader.votes} ${leader.votes===1?'voto':'voti'}</span></div>`
@@ -378,12 +388,19 @@ function render(){
     itemsHtml = '<p class="empty">Nessuna missione proposta ancora.</p>';
   } else {
     itemsHtml = sorted.map(r => {
-      const voted = myVotes.includes(r.id);
-      const maxed = r.votes >= MAX_VOTES && !voted;
+      const isConfirmed = votedToday && confirmed.includes(r.id);
+      const isPending = !votedToday && pendingSelection.includes(r.id);
+      const maxedOut = r.votes >= MAX_VOTES && !isConfirmed && !isPending;
+      const pickLimitReached = !votedToday && !isPending && pendingSelection.length >= MAX_PICKS;
+      const disablePick = votedToday || busy || maxedOut || pickLimitReached;
       const showRemove = !r.permanent && removeOk;
+      let btnClass = 'vote-btn';
+      if(isConfirmed) btnClass += ' voted';
+      else if(isPending) btnClass += ' pending';
+      if(maxedOut) btnClass += ' maxed';
       return `
         <div class="item">
-          <button class="vote-btn ${voted ? 'voted' : ''} ${maxed ? 'maxed' : ''}" data-id="${r.id}" ${maxed ? 'disabled' : ''} ${busy?'disabled':''} aria-label="Vota ${escapeHtml(r.name)}">${voted ? '✓' : '+'}</button>
+          <button class="${btnClass}" data-id="${r.id}" ${disablePick ? 'disabled' : ''} aria-label="Seleziona ${escapeHtml(r.name)}">${isConfirmed ? '✓' : (isPending ? '●' : '+')}</button>
           <div class="name-wrap">
             <div class="name">${escapeHtml(r.name)}</div>
             ${r.permanent ? '<span class="perm-badge">fissa</span>' : ''}
@@ -399,6 +416,16 @@ function render(){
   const nonPermCount = list.filter(r => !r.permanent).length;
   const removeHint = !removeOk && nonPermCount > 0
     ? `<p class="remove-hint">Le proposte extra si possono rimuovere solo dalle ${REMOVE_FROM_HOUR}:00 in poi, per non alterare il voto in corso.</p>` : '';
+
+  let voteStatusHtml = '';
+  if(votedToday){
+    const names = confirmed.map(id => (state.restaurants[id] ? state.restaurants[id].name : '(rimossa)'));
+    voteStatusHtml = `<p class="vote-status">Hai votato: ${escapeHtml(names.join(', ') || '—')}<span class="undo" id="undo-vote-btn">annulla e rivota</span></p>`;
+  } else if(list.length > 0){
+    voteStatusHtml = `
+      <p class="vote-status">Seleziona fino a ${MAX_PICKS} proposte, poi conferma (${pendingSelection.length}/${MAX_PICKS})</p>
+      <button class="confirm-btn ${pendingSelection.length >= 1 && !busy ? 'lit':'dark'}" id="confirm-vote-btn" ${pendingSelection.length >= 1 && !busy ? '' : 'disabled'}>OK!</button>`;
+  }
 
   const addRowHtml = addFormOpen ? `
     <div class="add-row">
@@ -422,10 +449,11 @@ function render(){
     </div>
     ${itemsHtml}
     ${removeHint}
+    ${voteStatusHtml}
     ${addRowHtml}
   `;
 
-  document.querySelectorAll('.vote-btn').forEach(btn => { btn.onclick = () => toggleVote(btn.dataset.id); });
+  document.querySelectorAll('.vote-btn').forEach(btn => { btn.onclick = () => togglePending(btn.dataset.id); });
   document.querySelectorAll('[data-remove]').forEach(btn => { btn.onclick = () => removeRestaurant(btn.dataset.remove, btn.dataset.name); });
   document.getElementById('toggle-add').onclick = () => { addFormOpen = !addFormOpen; render(); };
   document.getElementById('change-name-btn').onclick = () => {
@@ -433,6 +461,10 @@ function render(){
       localStorage.removeItem('lunch-my-name'); myName = null; render();
     }
   };
+  const undoBtn = document.getElementById('undo-vote-btn');
+  if(undoBtn) undoBtn.onclick = undoVote;
+  const confirmBtn = document.getElementById('confirm-vote-btn');
+  if(confirmBtn) confirmBtn.onclick = confirmVotes;
   const addBtn = document.getElementById('add-btn');
   if(addBtn) addBtn.onclick = addRestaurant;
   const newNameInput = document.getElementById('new-name');
@@ -440,6 +472,74 @@ function render(){
 
   const decideBtn = document.getElementById('decide-center-btn');
   if(decideBtn && enough) decideBtn.onclick = openDecisionModal;
+}
+
+/* ---- voting: select up to 2, then confirm ---- */
+function togglePending(id){
+  if(busy || myConfirmedPicks()) return;
+  if(pendingSelection.includes(id)){
+    pendingSelection = pendingSelection.filter(x => x !== id);
+  } else {
+    if(pendingSelection.length >= MAX_PICKS) return;
+    pendingSelection = [...pendingSelection, id];
+  }
+  render();
+}
+
+async function confirmVotes(){
+  if(busy || pendingSelection.length === 0 || myConfirmedPicks()) return;
+  busy = true; render();
+  const picks = [...pendingSelection];
+  try{
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+      const data = snap.data() || {};
+      if(data.voterPicks && data.voterPicks[myName]){
+        throw new Error('ALREADY_VOTED');
+      }
+      const updates = {};
+      picks.forEach(id => {
+        const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
+        updates[`restaurants.${id}.votes`] = Math.min(MAX_VOTES, current + 1);
+      });
+      updates[`voters.${myName}`] = true;
+      updates[`voterPicks.${myName}`] = picks;
+      tx.update(docRef, updates);
+    });
+    pendingSelection = [];
+  }catch(e){
+    if(e && e.message === 'ALREADY_VOTED'){
+      alert('Risulta che hai già votato oggi (magari da un altro dispositivo). Le tue scelte precedenti restano valide.');
+    } else {
+      console.error(e);
+      alert('Errore nel confermare il voto: ' + (e && e.message ? e.message : e));
+    }
+  }
+  busy = false; render();
+}
+
+async function undoVote(){
+  if(busy) return;
+  const confirmed = myConfirmedPicks();
+  if(!confirmed) return;
+  const ok = window.confirm('Vuoi annullare il tuo voto di oggi e rivotare?');
+  if(!ok) return;
+  busy = true; render();
+  try{
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(docRef);
+      const data = snap.data() || {};
+      const updates = {};
+      confirmed.forEach(id => {
+        const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
+        updates[`restaurants.${id}.votes`] = Math.max(0, current - 1);
+      });
+      updates[`voterPicks.${myName}`] = firebase.firestore.FieldValue.delete();
+      tx.update(docRef, updates);
+    });
+    pendingSelection = [];
+  }catch(e){ console.error(e); alert('Errore: ' + (e && e.message ? e.message : e)); }
+  busy = false; render();
 }
 
 /* ---- CRUD ---- */
@@ -458,7 +558,8 @@ async function addRestaurant(){
 
   busy = true; render();
   const id = 'r' + Date.now() + Math.floor(Math.random()*1000);
-  try{ await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName } }); }catch(e){ console.error(e); }
+  try{ await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName } }); }
+  catch(e){ console.error(e); alert('Errore nell\'aggiungere il ristorante: ' + (e && e.message ? e.message : e)); }
   busy = false; addFormOpen = false;
 }
 
@@ -469,29 +570,13 @@ async function removeRestaurant(id, name){
   const ok = window.confirm(`Rimuovere "${name}" dalla lista?`);
   if(!ok) return;
   busy = true; render();
-  try{ await docRef.update({ [`restaurants.${id}`]: firebase.firestore.FieldValue.delete() }); }catch(e){ console.error(e); }
-  busy = false;
-}
-
-async function toggleVote(id){
-  if(busy) return;
-  busy = true; render();
-  const voted = myVotes.includes(id);
   try{
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(docRef);
-      const data = snap.data() || {};
-      const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
-      let next = current + (voted ? -1 : 1);
-      next = Math.max(0, Math.min(MAX_VOTES, next));
-      const updates = { [`restaurants.${id}.votes`]: next };
-      if(!voted) updates[`voters.${myName}`] = true;
-      tx.update(docRef, updates);
-    });
-    myVotes = voted ? myVotes.filter(v => v !== id) : [...myVotes, id];
-    saveMyVotes();
-  }catch(e){ console.error(e); }
-  busy = false;
+    await docRef.update({ [`restaurants.${id}`]: firebase.firestore.FieldValue.delete() });
+  }catch(e){
+    console.error(e);
+    alert('Non sono riuscito a rimuoverlo. Motivo restituito dal database:\n\n' + (e && e.message ? e.message : e));
+  }
+  busy = false; render();
 }
 
 /* ---- decision modal ---- */
@@ -510,12 +595,9 @@ function buildWheelMarkup(list, rotation){
     <div class="wheel" id="modal-wheel-el" style="background:${bg}; transform:rotate(${rotation}deg);">${labelsHtml}</div>
     <div class="wheel-rivet"></div></div>`;
 }
-
 function goldFlash(){
-  const f = document.createElement('div');
-  f.className = 'gold-flash';
-  document.body.appendChild(f);
-  setTimeout(() => f.remove(), 700);
+  const f = document.createElement('div'); f.className = 'gold-flash';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 700);
 }
 
 function openDecisionModal(){
@@ -558,45 +640,36 @@ function openDecisionModal(){
     if(titleEl) titleEl.textContent = 'Missione assegnata';
     if(statusEl) statusEl.textContent = '🎯 ' + winner.name;
     goldFlash();
-
     try{
-      const newHistory = [{ name: winner.name, date: todayStr(), addedBy: winner.addedBy || null }, ...(state.history || [])].slice(0, 10);
+      const newHistory = [{ name: winner.name, date: calendarDateStr(), addedBy: winner.addedBy || null, periodKey: periodStr() }, ...(state.history || [])].slice(0, 10);
       await docRef.update({ history: newHistory });
     }catch(e){ console.error(e); }
-
-    setTimeout(() => {
-      modalRoot.innerHTML = '';
-      spinning = false;
-      render();
-    }, 1500);
+    setTimeout(() => { modalRoot.innerHTML = ''; spinning = false; render(); }, 1500);
   }, 250 + 3600);
 }
 
 /* ---- init ---- */
 async function init(){
   if(!configOk){ render(); return; }
-  loadMyVotes();
   try{
     const snap = await docRef.get();
     if(!snap.exists){
       const restaurants = {};
       PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
-      const fresh = { restaurants, history: [], voters: {}, voteDate: todayStr() };
+      const fresh = { restaurants, history: [], voters: {}, voterPicks: {}, voteDate: periodStr() };
       await docRef.set(fresh);
       state = fresh;
     } else {
       let data = snap.data();
       data = await ensurePermanentExist(data);
-      state = await ensureFreshDay(data);
+      state = await ensureFreshPeriod(data);
     }
     docRef.onSnapshot(
       doc => { if(doc.exists){ state = doc.data(); if(!spinning) render(); } },
       err => showFatalError(err)
     );
     render();
-  }catch(e){
-    showFatalError(e);
-  }
+  }catch(e){ showFatalError(e); }
 }
 
 function showFatalError(e){
