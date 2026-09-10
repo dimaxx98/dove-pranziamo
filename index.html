@@ -240,6 +240,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================
+   INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE
    ====================================================== */
 const firebaseConfig = {
 apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
@@ -259,7 +260,7 @@ const MIN_NAME_LEN = 2;
 const MAX_NAME_LEN = 40;
 const REMOVE_FROM_HOUR = 14;     // rimozione sbloccata dalle 14 in poi
 const RESET_HOUR = 14;           // la "giornata di voto" ricomincia alle 14
-const MIN_VOTERS = 4;
+const MIN_VOTERS = 6;
 const NAME_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]+$/u;
 const PERMANENT = [
   { id: 'perm-mensa', name: 'Mensa' },
@@ -445,7 +446,7 @@ function render(){
       const isPending = !votedToday && pendingSelection.includes(r.id);
       const maxedOut = r.votes >= MAX_VOTES && !isConfirmed && !isPending;
       const pickLimitReached = !votedToday && !isPending && pendingSelection.length >= MAX_PICKS;
-      const disablePick = votedToday || busy || maxedOut || pickLimitReached;
+      const disablePick = votedToday || busy || maxedOut || pickLimitReached || decidedThisPeriod;
       const showRemove = !r.permanent;
       let btnClass = 'vote-btn';
       if(isConfirmed) btnClass += ' voted';
@@ -471,7 +472,9 @@ function render(){
     ? `<p class="remove-hint">Le proposte extra si possono rimuovere solo dalle ${REMOVE_FROM_HOUR}:00 in poi, per non alterare il voto in corso.</p>` : '';
 
   let voteStatusHtml = '';
-  if(votedToday){
+  if(decidedThisPeriod){
+    voteStatusHtml = `<p class="vote-status">La votazione è chiusa: la missione di questo turno è già stata decisa. Si riapre alle ${REMOVE_FROM_HOUR}:00.</p>`;
+  } else if(votedToday){
     const names = confirmed.map(id => (state.restaurants[id] ? state.restaurants[id].name : '(rimossa)'));
     voteStatusHtml = `<p class="vote-status">Hai votato: ${escapeHtml(names.join(', ') || '—')}<span class="undo" id="undo-vote-btn">annulla e rivota</span></p>`;
   } else if(list.length > 0){
@@ -529,7 +532,7 @@ function render(){
 
 /* ---- voting: select up to 2, then confirm ---- */
 function togglePending(id){
-  if(busy || myConfirmedPicks()) return;
+  if(busy || myConfirmedPicks() || decidedThisPeriodNow()) return;
   if(pendingSelection.includes(id)){
     pendingSelection = pendingSelection.filter(x => x !== id);
   } else {
@@ -540,7 +543,7 @@ function togglePending(id){
 }
 
 async function confirmVotes(){
-  if(busy || pendingSelection.length === 0 || myConfirmedPicks()) return;
+  if(busy || pendingSelection.length === 0 || myConfirmedPicks() || decidedThisPeriodNow()) return;
   busy = true; render();
   const picks = [...pendingSelection];
   try{
@@ -549,6 +552,9 @@ async function confirmVotes(){
       const data = snap.data() || {};
       if(data.voterPicks && data.voterPicks[myName]){
         throw new Error('ALREADY_VOTED');
+      }
+      if(data.history && data.history[0] && data.history[0].periodKey === periodStr()){
+        throw new Error('ALREADY_DECIDED');
       }
       const updates = {};
       picks.forEach(id => {
@@ -563,6 +569,8 @@ async function confirmVotes(){
   }catch(e){
     if(e && e.message === 'ALREADY_VOTED'){
       alert('Risulta che hai già votato oggi (magari da un altro dispositivo). Le tue scelte precedenti restano valide.');
+    } else if(e && e.message === 'ALREADY_DECIDED'){
+      alert('La missione è già stata decisa per questo turno: non è più possibile votare.');
     } else {
       console.error(e);
       alert('Errore nel confermare il voto: ' + (e && e.message ? e.message : e));
@@ -571,8 +579,12 @@ async function confirmVotes(){
   busy = false; render();
 }
 
+function decidedThisPeriodNow(){
+  return !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
+}
+
 async function undoVote(){
-  if(busy) return;
+  if(busy || decidedThisPeriodNow()) return;
   const confirmed = myConfirmedPicks();
   if(!confirmed) return;
   const ok = window.confirm('Vuoi annullare il tuo voto di oggi e rivotare?');
@@ -582,6 +594,9 @@ async function undoVote(){
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(docRef);
       const data = snap.data() || {};
+      if(data.history && data.history[0] && data.history[0].periodKey === periodStr()){
+        throw new Error('ALREADY_DECIDED');
+      }
       const updates = {};
       confirmed.forEach(id => {
         const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
@@ -591,7 +606,14 @@ async function undoVote(){
       tx.update(docRef, updates);
     });
     pendingSelection = [];
-  }catch(e){ console.error(e); alert('Errore: ' + (e && e.message ? e.message : e)); }
+  }catch(e){
+    if(e && e.message === 'ALREADY_DECIDED'){
+      alert('La missione è già stata decisa per questo turno: non puoi più cambiare voto.');
+    } else {
+      console.error(e);
+      alert('Errore: ' + (e && e.message ? e.message : e));
+    }
+  }
   busy = false; render();
 }
 
