@@ -63,13 +63,13 @@
 /* ======================================================
    ====================================================== */
 const firebaseConfig = {
-  apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
-  authDomain: "lunchwhere-14987.firebaseapp.com",
-  projectId: "lunchwhere-14987",
-  storageBucket: "lunchwhere-14987.firebasestorage.app",
-  messagingSenderId: "195899666959",
-  appId: "1:195899666959:web:72a61dc464b169bdfee97a",
-  measurementId: "G-1H99Y8N1XY"
+apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
+authDomain: "lunchwhere-14987.firebaseapp.com",
+projectId: "lunchwhere-14987",
+storageBucket: "lunchwhere-14987.firebasestorage.app",
+messagingSenderId: "195899666959",
+appId: "1:195899666959:web:72a61dc464b169bdfee97a",
+measurementId: "G-1H99Y8N1XY"
 };
 /* ====================================================== */
 
@@ -129,8 +129,14 @@ if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
       return;
     }
 
-    const names = Array.from(new Set(days.flatMap(d => Object.keys(d.tallies || {}))));
+    const allNames = Array.from(new Set(days.flatMap(d => Object.keys(d.tallies || {}))));
+    const names = allNames.filter(name => days.some(d => (d.tallies && d.tallies[name]) > 0));
     const labels = days.map(d => d.date.slice(5));
+
+    if(names.length === 0){
+      renderEmptyChart('Nessun voto negli ultimi 30 giorni.');
+      return;
+    }
 
     const datasets = names.map((name, i) => {
       const color = PALETTE[i % PALETTE.length];
@@ -155,7 +161,7 @@ if(firebaseConfig.apiKey !== "INCOLLA_QUI"){
       data: { labels, datasets },
       options: {
         responsive: true,
-        plugins: { legend: { position: 'top', labels: { color: '#EAF1F7', font: { family: 'Rajdhani' } } } },
+        plugins: { legend: { position: 'bottom', labels: { color: '#EAF1F7', font: { family: 'Rajdhani' } } } },
         scales: {
           x: { ticks: { color: '#8FA6BE' }, grid: { color: 'rgba(143,166,190,0.15)' } },
           y: { beginAtZero: true, ticks: { color: '#8FA6BE', stepSize: 1 }, grid: { color: 'rgba(143,166,190,0.15)' } }
