@@ -154,7 +154,7 @@
   .vote-status{ font-size:12.5px; color:var(--steel); margin:8px 0 2px; text-align:center; }
   .vote-status .undo{ color:var(--amber); text-decoration:underline; cursor:pointer; margin-left:6px; }
 
-  .item{ display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px dashed var(--line); }
+  .item{ position:relative; display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px dashed var(--line); overflow:hidden; }
   .item:last-child{ border-bottom:none; }
   .item .name-wrap{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
   .item .name{ font-size:16px; font-weight:600; overflow-wrap:break-word; }
@@ -167,6 +167,20 @@
   .vote-btn.maxed, .vote-btn:disabled{ opacity:0.35; }
   .remove-btn{ background:transparent; color:var(--red); font-size:18px; font-weight:700; padding:6px 4px;
     flex-shrink:0; border:1px solid var(--line); border-radius:50%; width:34px; height:34px; cursor:pointer; }
+  .remove-btn.locked{ color:var(--steel); opacity:0.5; }
+
+  .item.item-takeoff{ animation: row-collapse 0.8s ease forwards; }
+  @keyframes row-collapse{
+    0%{ opacity:1; max-height:70px; }
+    35%{ opacity:0.7; }
+    100%{ opacity:0; max-height:0; padding-top:0; padding-bottom:0; border-color:transparent; }
+  }
+  .takeoff-jet{ position:absolute; left:8%; top:50%; margin-top:-11px; font-size:20px; pointer-events:none;
+    animation: jet-takeoff 0.8s ease-in forwards; }
+  @keyframes jet-takeoff{
+    0%{ transform:translate(0,0) rotate(-8deg) scale(1); opacity:1; }
+    100%{ transform:translate(240px, -160px) rotate(-38deg) scale(0.55); opacity:0; }
+  }
   .empty{ padding:16px 0; color:var(--steel); font-size:14px; text-align:center; }
   .limit-note{ font-size:12px; color:var(--steel); margin-top:10px; text-align:center; }
   .remove-hint{ font-size:12px; color:var(--steel); margin-top:8px; text-align:center; }
@@ -226,7 +240,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================
-   INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE
    ====================================================== */
 const firebaseConfig = {
 apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
@@ -433,20 +446,20 @@ function render(){
       const maxedOut = r.votes >= MAX_VOTES && !isConfirmed && !isPending;
       const pickLimitReached = !votedToday && !isPending && pendingSelection.length >= MAX_PICKS;
       const disablePick = votedToday || busy || maxedOut || pickLimitReached;
-      const showRemove = !r.permanent && removeOk;
+      const showRemove = !r.permanent;
       let btnClass = 'vote-btn';
       if(isConfirmed) btnClass += ' voted';
       else if(isPending) btnClass += ' pending';
       if(maxedOut) btnClass += ' maxed';
       return `
-        <div class="item">
+        <div class="item" data-item-id="${r.id}">
           <button class="${btnClass}" data-id="${r.id}" ${disablePick ? 'disabled' : ''} aria-label="Seleziona ${escapeHtml(r.name)}">${isConfirmed ? '✓' : (isPending ? '●' : '+')}</button>
           <div class="name-wrap">
             <div class="name">${escapeHtml(r.name)}</div>
             ${r.permanent ? '<span class="perm-badge">fissa</span>' : ''}
           </div>
           <div class="votes">${r.votes}/${MAX_VOTES}</div>
-          ${showRemove ? `<button class="remove-btn" data-remove="${r.id}" data-name="${escapeHtml(r.name)}" ${busy?'disabled':''} aria-label="Rimuovi ${escapeHtml(r.name)}">−</button>` : ''}
+          ${showRemove ? `<button class="remove-btn ${removeOk ? '' : 'locked'}" data-remove="${r.id}" data-name="${escapeHtml(r.name)}" ${busy?'disabled':''} aria-label="Rimuovi ${escapeHtml(r.name)}">−</button>` : ''}
         </div>`;
     }).join('');
   }
@@ -609,7 +622,19 @@ async function removeRestaurant(id, name){
   if(!canRemoveNow()){ alert(`Le rimozioni sono permesse solo dalle ${REMOVE_FROM_HOUR}:00 in poi.`); return; }
   const ok = window.confirm(`Rimuovere "${name}" dalla lista?`);
   if(!ok) return;
-  busy = true; render();
+
+  busy = true;
+  const row = document.querySelector(`[data-item-id="${id}"]`);
+  if(row){
+    row.querySelectorAll('button').forEach(b => b.disabled = true);
+    const jet = document.createElement('div');
+    jet.className = 'takeoff-jet';
+    jet.textContent = '✈️';
+    row.appendChild(jet);
+    row.classList.add('item-takeoff');
+    await new Promise(res => setTimeout(res, 780));
+  }
+
   try{
     await docRef.update({ [`restaurants.${id}`]: firebase.firestore.FieldValue.delete() });
   }catch(e){
