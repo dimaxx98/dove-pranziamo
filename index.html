@@ -88,6 +88,8 @@
     box-shadow: inset 0 0 0 2px rgba(232,67,47,0.5); cursor:not-allowed; }
   .decide-btn-center.ready{ background:radial-gradient(circle at 35% 30%, #FFCB63, var(--amber) 70%); color:#241705;
     box-shadow:0 0 0 3px rgba(255,176,32,0.25), 0 4px 16px rgba(0,0,0,0.5); animation: pulse-ready 2.2s ease-in-out infinite; }
+  .decide-btn-center.done{ background:radial-gradient(circle at 35% 30%, #2E8B57, #1E5E3B 70%); color:#DFF6E8;
+    box-shadow: inset 0 0 0 2px rgba(61,220,110,0.4); cursor:not-allowed; }
   @keyframes pulse-ready{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
   .decide-caption{ font-size:12.5px; color:var(--steel); text-align:center; max-width:240px; }
 
@@ -297,6 +299,7 @@ function escapeHtml(s){
 /* ---- icons ---- */
 function wheelIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="2"/></svg>`; }
 function exclaimIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>`; }
+function checkIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`; }
 function laurelSvg(side){
   return `<svg class="laurel ${side}" viewBox="0 0 24 40" fill="none" stroke="currentColor" stroke-width="1.5">
     <path d="M12 38 C 8 30, 8 20, 12 2"/>
@@ -401,17 +404,23 @@ function render(){
     : `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">nessun bersaglio ancora</span></div>`;
 
   const voters = uniqueVoterCount();
-  const enough = voters >= MIN_VOTERS && list.length >= 2;
+  const decidedThisPeriod = !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
+  const enough = !decidedThisPeriod && voters >= MIN_VOTERS && list.length >= 2;
+  const decideBtnClass = decidedThisPeriod ? 'done' : (enough ? 'ready' : 'locked');
+  const decideIcon = decidedThisPeriod ? checkIconSvg() : (enough ? wheelIconSvg() : exclaimIconSvg());
+  const decideCaption = decidedThisPeriod
+    ? 'Missione già decisa per questo turno — si riapre alle 14:00'
+    : (enough ? 'Tocca per far decidere la ruota' : `Servono almeno ${MIN_VOTERS} colleghi che votino oggi (${voters}/${MIN_VOTERS})`);
   const decideHtml = `
     <div class="decide-zone">
       <div class="radar-ring">
         <div class="radar-sweep"></div>
-        <button class="decide-btn-center ${enough ? 'ready':'locked'}" id="decide-center-btn" ${enough?'':'disabled'}
-          aria-label="${enough ? 'Decidi la missione' : 'Servono più voti'}">
-          ${enough ? wheelIconSvg() : exclaimIconSvg()}
+        <button class="decide-btn-center ${decideBtnClass}" id="decide-center-btn" ${enough?'':'disabled'}
+          aria-label="${decidedThisPeriod ? 'Missione già decisa' : (enough ? 'Decidi la missione' : 'Servono più voti')}">
+          ${decideIcon}
         </button>
       </div>
-      <div class="decide-caption">${enough ? 'Tocca per far decidere la ruota' : `Servono almeno ${MIN_VOTERS} colleghi che votino oggi (${voters}/${MIN_VOTERS})`}</div>
+      <div class="decide-caption">${decideCaption}</div>
     </div>`;
 
   let itemsHtml = '';
@@ -647,7 +656,8 @@ async function announceAndClose(winner, titleText, statusText){
 
 function openDecisionModal(){
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
-  if(spinning || list.length < 2 || uniqueVoterCount() < MIN_VOTERS) return;
+  const decidedThisPeriod = !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
+  if(spinning || decidedThisPeriod || list.length < 2 || uniqueVoterCount() < MIN_VOTERS) return;
   spinning = true;
 
   const maxVotes = Math.max(...list.map(r => r.votes));
