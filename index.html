@@ -107,8 +107,9 @@
     box-shadow: 0 0 0 2px var(--amber), inset 0 0 30px rgba(0,0,0,0.4);
     transition: transform 3.6s cubic-bezier(0.12,0.72,0.15,1); }
   .wheel .slice-label{ position:absolute; top:50%; left:50%; width:50%; height:2px; transform-origin:0 0;
-    display:flex; align-items:center; font-size:10.5px; font-weight:600; color:#0E1A2B;
-    padding-left:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:88px; }
+    display:flex; align-items:center; font-size:12px; font-weight:700; color:#0E1A2B;
+    padding-left:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.25); }
   .wheel-rivet{ position:absolute; top:50%; left:50%; width:22px; height:22px; transform:translate(-50%,-50%);
     border-radius:50%; background:var(--panel); border:3px solid var(--amber); z-index:4; }
 
@@ -240,6 +241,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================
+   INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE
    ====================================================== */
 const firebaseConfig = {
 apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
