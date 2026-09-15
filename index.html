@@ -99,19 +99,35 @@
     display:flex; flex-direction:column; align-items:center; max-width:340px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
   .modal-title{ font-family:'Orbitron', sans-serif; font-size:14px; color:var(--gold); margin-bottom:14px; text-align:center; letter-spacing:0.03em; }
 
-  .wheel-wrap{ position:relative; width:min(64vw, 220px); height:min(64vw, 220px); margin-bottom:8px; }
-  .pointer{ position:absolute; top:-13px; left:50%; transform:translateX(-50%); width:0; height:0;
-    border-left:13px solid transparent; border-right:13px solid transparent; border-top:20px solid var(--amber);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); z-index:3; }
-  .wheel{ width:100%; height:100%; border-radius:50%; position:relative; border:4px solid var(--panel-light);
-    box-shadow: 0 0 0 2px var(--amber), inset 0 0 30px rgba(0,0,0,0.4);
-    transition: transform 3.6s cubic-bezier(0.12,0.72,0.15,1); }
-  .wheel .slice-label{ position:absolute; top:50%; left:50%; width:50%; height:2px; transform-origin:0 0;
-    display:flex; align-items:center; font-size:12px; font-weight:700; color:#0E1A2B;
-    padding-left:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:96px;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.25); }
-  .wheel-rivet{ position:absolute; top:50%; left:50%; width:22px; height:22px; transform:translate(-50%,-50%);
-    border-radius:50%; background:var(--panel); border:3px solid var(--amber); z-index:4; }
+  .slot-frame{ position:relative; width:min(78vw, 260px); margin:2px 0 10px; padding:10px;
+    background:linear-gradient(180deg, #1B2E48, #101B2D); border:2px solid var(--gold); border-radius:10px;
+    box-shadow:0 0 0 3px rgba(243,201,105,0.15), 0 10px 30px rgba(0,0,0,0.5); }
+  .slot-frame::before, .slot-frame::after{ content:''; position:absolute; left:8px; width:8px; height:8px;
+    border-radius:50%; background:radial-gradient(circle at 35% 35%, #E9D08C, #8A6A2A); }
+  .slot-frame::before{ top:8px; }
+  .slot-frame::after{ bottom:8px; }
+  .slot-frame .rivet-tr, .slot-frame .rivet-br{ position:absolute; right:8px; width:8px; height:8px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #E9D08C, #8A6A2A); }
+  .slot-frame .rivet-tr{ top:8px; } .slot-frame .rivet-br{ bottom:8px; }
+  .slot-window{ position:relative; height:168px; overflow:hidden; border-radius:6px;
+    background:radial-gradient(ellipse at 50% 50%, #16233A, #0A121F); border:1px solid rgba(0,0,0,0.4); }
+  .slot-payline{ position:absolute; left:0; right:0; top:56px; height:56px; pointer-events:none; z-index:2;
+    border-top:2px solid var(--gold); border-bottom:2px solid var(--gold);
+    box-shadow: inset 0 0 18px rgba(255,176,32,0.18); background:rgba(255,176,32,0.05); }
+  .slot-fade-top, .slot-fade-bottom{ position:absolute; left:0; right:0; height:44px; z-index:3; pointer-events:none; }
+  .slot-fade-top{ top:0; background:linear-gradient(180deg, #0A121F, transparent); }
+  .slot-fade-bottom{ bottom:0; background:linear-gradient(0deg, #0A121F, transparent); }
+  .slot-strip{ position:absolute; left:0; right:0; top:0; will-change:transform;
+    transition: transform 3.6s cubic-bezier(0.09,0.65,0.15,1); }
+  .slot-strip.blur{ filter: blur(2.5px); }
+  .slot-item{ height:56px; display:flex; align-items:center; justify-content:center; text-align:center;
+    padding:0 14px; font-family:'Orbitron', sans-serif; font-weight:700; font-size:14px; color:var(--ice);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .slot-shine{ position:absolute; inset:0; z-index:4; pointer-events:none; overflow:hidden; border-radius:6px; }
+  .slot-shine::after{ content:''; position:absolute; top:-100%; left:0; right:0; height:60%;
+    background:linear-gradient(180deg, rgba(255,255,255,0.14), transparent);
+    animation: slot-sweep 2.4s ease-in-out infinite; }
+  @keyframes slot-sweep{ 0%{ top:-60%; } 100%{ top:110%; } }
 
   .coin-wrap{ perspective:700px; width:150px; height:150px; margin:6px 0 8px; }
   .coin{ position:relative; width:100%; height:100%; transform-style:preserve-3d;
@@ -241,7 +257,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================
-   INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE
    ====================================================== */
 const firebaseConfig = {
 apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
@@ -692,21 +707,24 @@ async function removeRestaurant(id, name){
 }
 
 /* ---- decision modal ---- */
-function buildWheelMarkup(list, rotation){
-  const n = list.length, seg = 360 / n;
-  let gradientParts = [], labelsHtml = '';
-  list.forEach((r, i) => {
-    const color = PALETTE[i % PALETTE.length];
-    const start = i * seg, end = start + seg;
-    gradientParts.push(`${color} ${start}deg ${end}deg`);
-    const mid = start + seg/2;
-    labelsHtml += `<div class="slice-label" style="transform:rotate(${mid}deg);">${escapeHtml(r.name)}</div>`;
-  });
-  const bg = `conic-gradient(${gradientParts.join(',')})`;
-  return `<div class="wheel-wrap"><div class="pointer"></div>
-    <div class="wheel" id="modal-wheel-el" style="background:${bg}; transform:rotate(${rotation}deg);">${labelsHtml}</div>
-    <div class="wheel-rivet"></div></div>`;
+const SLOT_ITEM_HEIGHT = 56;
+const SLOT_LOOPS = 5; // giri completi prima di fermarsi sul vincitore, per far scorrere bene la colonna
+
+function buildSlotMarkup(list){
+  const itemsHtml = list.map(r => `<div class="slot-item">${escapeHtml(r.name)}</div>`).join('');
+  return `
+    <div class="slot-frame">
+      <div class="rivet-tr"></div><div class="rivet-br"></div>
+      <div class="slot-window">
+        <div class="slot-strip blur" id="slot-strip">${itemsHtml}</div>
+        <div class="slot-payline"></div>
+        <div class="slot-fade-top"></div>
+        <div class="slot-fade-bottom"></div>
+        <div class="slot-shine"></div>
+      </div>
+    </div>`;
 }
+
 function goldFlash(){
   const f = document.createElement('div'); f.className = 'gold-flash';
   document.body.appendChild(f); setTimeout(() => f.remove(), 700);
@@ -737,7 +755,7 @@ function openDecisionModal(){
   const tied = list.filter(r => r.votes === maxVotes);
 
   if(tied.length === 1){
-    runWheelToWinner(list, tied[0]);
+    runSlotToWinner(list, tied[0]);
   } else if(tied.length === 2){
     runCoinFlip(tied[0], tied[1]);
   } else {
@@ -745,36 +763,44 @@ function openDecisionModal(){
   }
 }
 
-function runWheelToWinner(list, winner){
-  const rotation = window.__wheelRotation || 0;
+function runSlotToWinner(list, winner){
   const modalRoot = document.getElementById('modal-root');
+  const n = list.length;
+  const winnerIndex = list.findIndex(r => r.id === winner.id);
+
+  // striscia: la lista ripetuta più volte, così la colonna ha spazio per "girare"
+  // prima di fermarsi sull'occorrenza finale del vincitore
+  const strip = [];
+  for(let loop = 0; loop <= SLOT_LOOPS; loop++){ strip.push(...list); }
+  const targetIndex = SLOT_LOOPS * n + winnerIndex;
+
   modalRoot.innerHTML = `
     <div class="modal-overlay">
       <div class="modal-card">
         <div class="modal-title" id="modal-title">Estrazione in corso…</div>
-        ${buildWheelMarkup(list, rotation)}
+        ${buildSlotMarkup(strip)}
         <div class="modal-status" id="modal-status"></div>
       </div>
     </div>`;
 
-  const n = list.length, seg = 360 / n;
-  const winnerIndex = list.findIndex(r => r.id === winner.id);
-  const segMid = winnerIndex * seg + seg/2;
-  const baseTurns = 5 * 360;
-  const targetWithinCircle = (360 - segMid) % 360;
-  const currentMod = ((rotation % 360) + 360) % 360;
-  const delta = (targetWithinCircle - currentMod + 360) % 360;
-  const newRotation = rotation + baseTurns + delta;
+  // la colonna centrale (payline) è al secondo dei tre slot visibili: serve uno scorrimento
+  // pari a (targetIndex - 1) altezze-riga perché quell'elemento finisca lì
+  const targetTranslate = -SLOT_ITEM_HEIGHT * (targetIndex - 1);
 
   setTimeout(() => {
-    const wheelEl = document.getElementById('modal-wheel-el');
-    if(wheelEl) wheelEl.style.transform = `rotate(${newRotation}deg)`;
-  }, 250);
+    const stripEl = document.getElementById('slot-strip');
+    if(stripEl) stripEl.style.transform = `translateY(${targetTranslate}px)`;
+  }, 200);
+
+  // toglie la sfocatura da "movimento veloce" poco prima che si fermi, per un finale nitido
+  setTimeout(() => {
+    const stripEl = document.getElementById('slot-strip');
+    if(stripEl) stripEl.classList.remove('blur');
+  }, 200 + 3100);
 
   setTimeout(() => {
-    window.__wheelRotation = newRotation;
     announceAndClose(winner, 'Missione assegnata', '🎯 ' + winner.name);
-  }, 250 + 3600);
+  }, 200 + 3600);
 }
 
 function runCoinFlip(a, b){
