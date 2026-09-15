@@ -264,8 +264,12 @@ const RESET_HOUR = 14;           // la "giornata di voto" ricomincia alle 14
 const MIN_VOTERS = 6;
 const NAME_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]+$/u;
 const PERMANENT = [
-  { id: 'perm-mensa', name: 'Mensa' },
-  { id: 'perm-mercato', name: 'MercaTò' }
+  { id: 'perm-mensa', name: 'Mensa', order: 1 },
+  { id: 'perm-mercato', name: 'MercaTò', order: 2 },
+  { id: 'perm-cinese-foglia', name: "Cinese (Foglia d'Acero)", order: 3 },
+  { id: 'perm-cinese-yingbin', name: 'Cinese (Ying Bin)', order: 4 },
+  { id: 'perm-kebab', name: 'Kebab', order: 5 },
+  { id: 'perm-meucci', name: 'Meucci', order: 6 }
 ];
 const PERMANENT_IDS = PERMANENT.map(p => p.id);
 const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
@@ -373,7 +377,14 @@ async function ensureFreshPeriod(data){
 
 async function ensurePermanentExist(data){
   const missing = {};
-  PERMANENT.forEach(p => { if(!data.restaurants || !data.restaurants[p.id]) missing[`restaurants.${p.id}`] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
+  PERMANENT.forEach(p => {
+    const existing = data.restaurants && data.restaurants[p.id];
+    if(!existing){
+      missing[`restaurants.${p.id}`] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true, order: p.order };
+    } else if(existing.order !== p.order){
+      missing[`restaurants.${p.id}.order`] = p.order;
+    }
+  });
   if(!data.voters) missing['voters'] = {};
   if(!data.voterPicks) missing['voterPicks'] = {};
   if(Object.keys(missing).length){
@@ -407,8 +418,8 @@ function render(){
   }
 
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
-  const sorted = [...list].sort((a,b) => b.votes - a.votes);
-  const leader = sorted[0];
+  const sorted = [...list].sort((a,b) => (a.order ?? 9999) - (b.order ?? 9999));
+  const leader = [...list].sort((a,b) => b.votes - a.votes)[0];
   const removeOk = canRemoveNow();
   const lastWin = state.history && state.history[0];
   const confirmed = myConfirmedPicks();
@@ -647,7 +658,7 @@ async function addRestaurant(){
 
   busy = true; render();
   const id = 'r' + Date.now() + Math.floor(Math.random()*1000);
-  try{ await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName } }); }
+  try{ await docRef.update({ [`restaurants.${id}`]: { name: val, votes: 0, addedBy: myName, order: Date.now() } }); }
   catch(e){ console.error(e); alert('Errore nell\'aggiungere il ristorante: ' + (e && e.message ? e.message : e)); }
   busy = false; addFormOpen = false;
 }
@@ -716,7 +727,8 @@ async function announceAndClose(winner, titleText, statusText){
 }
 
 function openDecisionModal(){
-  const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
+  const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }))
+    .sort((a,b) => (a.order ?? 9999) - (b.order ?? 9999));
   const decidedThisPeriod = !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
   if(spinning || decidedThisPeriod || list.length < 2 || uniqueVoterCount() < MIN_VOTERS) return;
   spinning = true;
@@ -832,7 +844,7 @@ async function init(){
     const snap = await docRef.get();
     if(!snap.exists){
       const restaurants = {};
-      PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true }; });
+      PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true, order: p.order }; });
       const fresh = { restaurants, history: [], voters: {}, voterPicks: {}, voteDate: periodStr() };
       await docRef.set(fresh);
       state = fresh;
