@@ -171,6 +171,14 @@
   .vote-status{ font-size:12.5px; color:var(--steel); margin:8px 0 2px; text-align:center; }
   .vote-status .undo{ color:var(--amber); text-decoration:underline; cursor:pointer; margin-left:6px; }
 
+  .special-row{ display:flex; gap:10px; margin:4px 0 14px; }
+  .special-btn{ flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;
+    background:var(--panel-light); border:1px solid var(--line); border-radius:8px; padding:10px 6px;
+    color:var(--steel); cursor:pointer; font-family:'Rajdhani', sans-serif; font-size:11.5px; font-weight:600; }
+  .special-btn svg{ width:20px; height:20px; }
+  .special-btn.active{ border-color:var(--amber); color:var(--amber); background:rgba(255,176,32,0.10); }
+  .special-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
   .item{ position:relative; display:flex; align-items:center; gap:8px; padding:12px 0; border-bottom:1px dashed var(--line); overflow:hidden; }
   .item:last-child{ border-bottom:none; }
   .item .name-wrap{ flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
@@ -257,6 +265,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================
+   INCOLLA QUI LA TUA CONFIGURAZIONE FIREBASE
    ====================================================== */
 const firebaseConfig = {
 apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
@@ -287,7 +296,6 @@ const PERMANENT = [
   { id: 'perm-meucci', name: 'Meucci', order: 6 }
 ];
 const PERMANENT_IDS = PERMANENT.map(p => p.id);
-const PALETTE = ['#FFB020','#3E6E9E','#E8432F','#55708A','#7C8B5B','#2E8B8B','#C0392B','#8A6FB0'];
 
 let db = null;
 let configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
@@ -346,6 +354,8 @@ function escapeHtml(s){
 function wheelIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="2"/></svg>`; }
 function exclaimIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>`; }
 function checkIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`; }
+function lunchboxIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9Z"/><path d="M8 9V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3"/><path d="M9 13.5h6"/></svg>`; }
+function middleFingerIconSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9.2" y="2" width="4.2" height="11.5" rx="2.1"/><path d="M6.8 12.5h10.4v3.8A4.7 4.7 0 0 1 12.5 21h-1a4.7 4.7 0 0 1-4.7-4.7v-3.8Z"/><path d="M6.8 14.8h10.4"/></svg>`; }
 function laurelSvg(side){
   return `<svg class="laurel ${side}" viewBox="0 0 24 40" fill="none" stroke="currentColor" stroke-width="1.5">
     <path d="M12 38 C 8 30, 8 20, 12 2"/>
@@ -383,7 +393,7 @@ async function ensureFreshPeriod(data){
     }
     const resetRestaurants = {};
     Object.keys(data.restaurants || {}).forEach(id => { resetRestaurants[id] = { ...data.restaurants[id], votes: 0 }; });
-    const fresh = { restaurants: resetRestaurants, history: data.history || [], voters: {}, voterPicks: {}, voteDate: current };
+    const fresh = { restaurants: resetRestaurants, history: data.history || [], voters: {}, voterPicks: {}, lunchbox: {}, absent: {}, voteDate: current };
     await docRef.set(fresh);
     return fresh;
   }
@@ -402,6 +412,8 @@ async function ensurePermanentExist(data){
   });
   if(!data.voters) missing['voters'] = {};
   if(!data.voterPicks) missing['voterPicks'] = {};
+  if(!data.lunchbox) missing['lunchbox'] = {};
+  if(!data.absent) missing['absent'] = {};
   if(Object.keys(missing).length){
     await docRef.update(missing);
     const snap = await docRef.get();
@@ -457,6 +469,8 @@ function render(){
     : `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">nessun bersaglio ancora</span></div>`;
 
   const voters = uniqueVoterCount();
+  const lunchboxActive = myLunchboxActive();
+  const absentActive = myAbsentActive();
   const decidedThisPeriod = !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
   const enough = !decidedThisPeriod && voters >= MIN_VOTERS && list.length >= 2;
   const decideBtnClass = decidedThisPeriod ? 'done' : (enough ? 'ready' : 'locked');
@@ -485,7 +499,7 @@ function render(){
       const isPending = !votedToday && pendingSelection.includes(r.id);
       const maxedOut = r.votes >= MAX_VOTES && !isConfirmed && !isPending;
       const pickLimitReached = !votedToday && !isPending && pendingSelection.length >= MAX_PICKS;
-      const disablePick = votedToday || busy || maxedOut || pickLimitReached || decidedThisPeriod;
+      const disablePick = votedToday || busy || maxedOut || pickLimitReached || decidedThisPeriod || lunchboxActive || absentActive;
       const showRemove = !r.permanent;
       let btnClass = 'vote-btn';
       if(isConfirmed) btnClass += ' voted';
@@ -510,12 +524,27 @@ function render(){
   const removeHint = !removeOk && nonPermCount > 0
     ? `<p class="remove-hint">Le proposte extra si possono rimuovere solo dalle ${REMOVE_FROM_HOUR}:00 in poi, per non alterare il voto in corso.</p>` : '';
 
+  const specialLocked = decidedThisPeriod;
+  const specialRowHtml = !votedToday ? `
+    <div class="special-row">
+      <button class="special-btn ${lunchboxActive ? 'active':''}" id="lunchbox-btn" ${specialLocked || busy ? 'disabled':''} aria-label="Ho già il pranzo">
+        ${lunchboxIconSvg()}<span>Ho il pranzo</span>
+      </button>
+      <button class="special-btn ${absentActive ? 'active':''}" id="absent-btn" ${specialLocked || busy ? 'disabled':''} aria-label="Non ci sarò">
+        ${middleFingerIconSvg()}<span>Mi faccio i cazzi miei</span>
+      </button>
+    </div>` : '';
+
   let voteStatusHtml = '';
   if(decidedThisPeriod){
     voteStatusHtml = `<p class="vote-status">La votazione è chiusa: la missione di questo turno è già stata decisa. Si riapre alle ${REMOVE_FROM_HOUR}:00.</p>`;
   } else if(votedToday){
     const names = confirmed.map(id => (state.restaurants[id] ? state.restaurants[id].name : '(rimossa)'));
     voteStatusHtml = `<p class="vote-status">Hai votato: ${escapeHtml(names.join(', ') || '—')}<span class="undo" id="undo-vote-btn">annulla e rivota</span></p>`;
+  } else if(lunchboxActive){
+    voteStatusHtml = `<p class="vote-status">Segnato: hai già il pranzo, oggi non voti. Non conti per la soglia dei ${MIN_VOTERS} votanti.</p>`;
+  } else if(absentActive){
+    voteStatusHtml = `<p class="vote-status">Segnato: oggi non ci sarai. Non conti per la soglia dei ${MIN_VOTERS} votanti.</p>`;
   } else if(list.length > 0){
     voteStatusHtml = `
       <p class="vote-status">Seleziona fino a ${MAX_PICKS} proposte, poi conferma (${pendingSelection.length}/${MAX_PICKS})</p>
@@ -534,6 +563,7 @@ function render(){
     ${medalHtml}
     ${readoutHtml}
     ${decideHtml}
+    ${specialRowHtml}
     <div class="section-head">
       <h2>Missioni proposte</h2>
       <div class="who-wrap">
@@ -556,6 +586,10 @@ function render(){
       localStorage.removeItem('lunch-my-name'); myName = null; render();
     }
   };
+  const lunchboxBtn = document.getElementById('lunchbox-btn');
+  if(lunchboxBtn) lunchboxBtn.onclick = toggleLunchbox;
+  const absentBtn = document.getElementById('absent-btn');
+  if(absentBtn) absentBtn.onclick = toggleAbsent;
   const undoBtn = document.getElementById('undo-vote-btn');
   if(undoBtn) undoBtn.onclick = undoVote;
   const confirmBtn = document.getElementById('confirm-vote-btn');
@@ -571,7 +605,7 @@ function render(){
 
 /* ---- voting: select up to 2, then confirm ---- */
 function togglePending(id){
-  if(busy || myConfirmedPicks() || decidedThisPeriodNow()) return;
+  if(busy || myConfirmedPicks() || decidedThisPeriodNow() || myLunchboxActive() || myAbsentActive()) return;
   if(pendingSelection.includes(id)){
     pendingSelection = pendingSelection.filter(x => x !== id);
   } else {
@@ -582,7 +616,7 @@ function togglePending(id){
 }
 
 async function confirmVotes(){
-  if(busy || pendingSelection.length === 0 || myConfirmedPicks() || decidedThisPeriodNow()) return;
+  if(busy || pendingSelection.length === 0 || myConfirmedPicks() || decidedThisPeriodNow() || myLunchboxActive() || myAbsentActive()) return;
   busy = true; render();
   const picks = [...pendingSelection];
   try{
@@ -620,6 +654,35 @@ async function confirmVotes(){
 
 function decidedThisPeriodNow(){
   return !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
+}
+
+function myLunchboxActive(){ return !!(state.lunchbox && state.lunchbox[deviceId]); }
+function myAbsentActive(){ return !!(state.absent && state.absent[deviceId]); }
+
+async function toggleLunchbox(){
+  if(busy || decidedThisPeriodNow() || myConfirmedPicks()) return;
+  const active = myLunchboxActive();
+  busy = true; render();
+  try{
+    const updates = {};
+    updates[`lunchbox.${deviceId}`] = active ? firebase.firestore.FieldValue.delete() : { name: myName };
+    if(!active) updates[`absent.${deviceId}`] = firebase.firestore.FieldValue.delete();
+    await docRef.update(updates);
+  }catch(e){ console.error(e); alert('Errore: ' + (e && e.message ? e.message : e)); }
+  busy = false; render();
+}
+
+async function toggleAbsent(){
+  if(busy || decidedThisPeriodNow() || myConfirmedPicks()) return;
+  const active = myAbsentActive();
+  busy = true; render();
+  try{
+    const updates = {};
+    updates[`absent.${deviceId}`] = active ? firebase.firestore.FieldValue.delete() : { name: myName };
+    if(!active) updates[`lunchbox.${deviceId}`] = firebase.firestore.FieldValue.delete();
+    await docRef.update(updates);
+  }catch(e){ console.error(e); alert('Errore: ' + (e && e.message ? e.message : e)); }
+  busy = false; render();
 }
 
 async function undoVote(){
@@ -871,7 +934,7 @@ async function init(){
     if(!snap.exists){
       const restaurants = {};
       PERMANENT.forEach(p => { restaurants[p.id] = { name: p.name, votes: 0, addedBy: 'sistema', permanent: true, order: p.order }; });
-      const fresh = { restaurants, history: [], voters: {}, voterPicks: {}, voteDate: periodStr() };
+      const fresh = { restaurants, history: [], voters: {}, voterPicks: {}, lunchbox: {}, absent: {}, voteDate: periodStr() };
       await docRef.set(fresh);
       state = fresh;
     } else {
@@ -911,22 +974,30 @@ function showFatalError(e){
 function showVotersModal(){
   const modalRoot = document.getElementById('modal-root');
   const picks = state.voterPicks || {};
-  const entries = Object.values(picks).sort((a,b) => (a.name||'').localeCompare(b.name||'', 'it'));
+  const lunchboxEntries = Object.values(state.lunchbox || {});
+  const absentEntries = Object.values(state.absent || {});
 
-  const rowsHtml = entries.length === 0
+  const voteRows = Object.values(picks).map(entry => {
+    const ids = entry.picks || [];
+    const labels = ids.map(id => (state.restaurants[id] ? state.restaurants[id].name : '(rimossa)'));
+    return { name: entry.name, detail: labels.join(', ') || '—' };
+  });
+  const lunchboxRows = lunchboxEntries.map(entry => ({ name: entry.name, detail: '🍱 ha già il pranzo' }));
+  const absentRows = absentEntries.map(entry => ({ name: entry.name, detail: '🖕 non sarà presente' }));
+
+  const allRows = [...voteRows, ...lunchboxRows, ...absentRows]
+    .sort((a,b) => (a.name||'').localeCompare(b.name||'', 'it'));
+
+  const rowsHtml = allRows.length === 0
     ? '<p class="empty">Nessuno ha ancora votato in questo turno.</p>'
-    : entries.map(entry => {
-        const ids = entry.picks || [];
-        const labels = ids.map(id => (state.restaurants[id] ? state.restaurants[id].name : '(rimossa)'));
-        return `<div class="voters-row"><span class="vname">${escapeHtml(entry.name || '—')}</span><span class="vpicks">${escapeHtml(labels.join(', ') || '—')}</span></div>`;
-      }).join('');
+    : allRows.map(row => `<div class="voters-row"><span class="vname">${escapeHtml(row.name || '—')}</span><span class="vpicks">${escapeHtml(row.detail)}</span></div>`).join('');
 
   modalRoot.innerHTML = `
     <div class="modal-overlay" id="voters-overlay">
       <div class="modal-card voters-modal-card">
         <div class="modal-title">Voti di questo turno</div>
         <div class="voters-list">${rowsHtml}</div>
-        <div class="voters-count">${entries.length} colleghi hanno votato, ciascuno con 1 o 2 scelte</div>
+        <div class="voters-count">${voteRows.length} voti, ${lunchboxRows.length} con il pranzo, ${absentRows.length} assenti</div>
         <button class="modal-close-btn" id="voters-close-btn">Chiudi</button>
       </div>
     </div>`;
