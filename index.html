@@ -211,6 +211,10 @@
   .empty{ padding:16px 0; color:var(--steel); font-size:14px; text-align:center; }
   .limit-note{ font-size:12px; color:var(--steel); margin-top:10px; text-align:center; }
   .remove-hint{ font-size:12px; color:var(--steel); margin-top:8px; text-align:center; }
+  .lunchbox-note{ font-size:12.5px; color:var(--amber); margin-top:10px; text-align:center;
+    border:1px solid var(--line); border-radius:6px; padding:8px 10px; background:rgba(255,176,32,0.06); }
+  .item.item-void .name{ color:var(--steel); opacity:0.6; }
+  .votes.votes-void{ color:var(--steel); text-decoration:line-through; opacity:0.6; }
 
   .confirm-btn{ display:block; width:100%; margin-top:14px; padding:13px; border-radius:8px; border:none;
     font-family:'Orbitron', sans-serif; font-weight:800; font-size:16px; letter-spacing:0.05em; cursor:pointer; }
@@ -298,6 +302,7 @@ const PERMANENT = [
   { id: 'perm-meucci', name: 'Meucci', order: 6 }
 ];
 const PERMANENT_IDS = PERMANENT.map(p => p.id);
+const LUNCHBOX_ALLOWED_IDS = ['perm-mensa', 'perm-mercato', 'perm-kebab'];
 
 let db = null;
 let configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
@@ -388,7 +393,7 @@ async function ensureFreshPeriod(data){
     const prevPeriod = data.voteDate;
     if(prevPeriod){
       const tallies = {};
-      Object.values(data.restaurants || {}).forEach(r => { tallies[r.name] = (tallies[r.name]||0) + (r.votes||0); });
+      Object.entries(data.restaurants || {}).forEach(([id, r]) => { tallies[r.name] = (tallies[r.name]||0) + effectiveVotes({ id, ...r }, data); });
       let winner = null;
       if(data.history && data.history[0] && data.history[0].periodKey === prevPeriod) winner = data.history[0].name;
       await appendDailyLog(prevPeriod, tallies, winner);
@@ -448,7 +453,8 @@ function render(){
 
   const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }));
   const sorted = [...list].sort((a,b) => (a.order ?? 9999) - (b.order ?? 9999));
-  const leader = [...list].sort((a,b) => b.votes - a.votes)[0];
+  const leaderCandidates = list.filter(r => !isRestrictedId(r.id));
+  const leader = [...leaderCandidates].sort((a,b) => effectiveVotes(b) - effectiveVotes(a))[0];
   const removeOk = canRemoveNow();
   const lastWin = state.history && state.history[0];
   const confirmed = myConfirmedPicks();
@@ -467,7 +473,7 @@ function render(){
     <div class="medal-banner empty"><div class="medal-text">Nessuna missione ancora compiuta: vota e poi decidete insieme.</div></div>`;
 
   const readoutHtml = leader
-    ? `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">${escapeHtml(leader.name)} · ${leader.votes} ${leader.votes===1?'voto':'voti'}</span></div>`
+    ? `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">${escapeHtml(leader.name)} · ${effectiveVotes(leader)} ${effectiveVotes(leader)===1?'voto':'voti'}</span></div>`
     : `<div class="readout"><span class="rlabel">In pole position</span><span class="rvalue">nessun bersaglio ancora</span></div>`;
 
   const voters = uniqueVoterCount();
@@ -493,6 +499,7 @@ function render(){
     </div>`;
 
   let itemsHtml = '';
+  const lunchboxRestriction = anyoneHasLunchbox();
   if(list.length === 0){
     itemsHtml = '<p class="empty">Nessuna missione proposta ancora.</p>';
   } else {
@@ -501,20 +508,21 @@ function render(){
       const isPending = !votedToday && pendingSelection.includes(r.id);
       const maxedOut = r.votes >= MAX_VOTES && !isConfirmed && !isPending;
       const pickLimitReached = !votedToday && !isPending && pendingSelection.length >= MAX_PICKS;
-      const disablePick = votedToday || busy || maxedOut || pickLimitReached || decidedThisPeriod || lunchboxActive || absentActive;
+      const restrictedByLunchbox = lunchboxRestriction && !LUNCHBOX_ALLOWED_IDS.includes(r.id) && !isConfirmed && !isPending;
+      const disablePick = votedToday || busy || maxedOut || pickLimitReached || decidedThisPeriod || lunchboxActive || absentActive || restrictedByLunchbox;
       const showRemove = !r.permanent;
       let btnClass = 'vote-btn';
       if(isConfirmed) btnClass += ' voted';
       else if(isPending) btnClass += ' pending';
       if(maxedOut) btnClass += ' maxed';
       return `
-        <div class="item" data-item-id="${r.id}">
+        <div class="item ${isRestrictedId(r.id) ? 'item-void' : ''}" data-item-id="${r.id}">
           <button class="${btnClass}" data-id="${r.id}" ${disablePick ? 'disabled' : ''} aria-label="Seleziona ${escapeHtml(r.name)}">${isConfirmed ? '✓' : (isPending ? '●' : '+')}</button>
           <div class="name-wrap">
             <div class="name">${escapeHtml(r.name)}</div>
             ${r.permanent ? '<span class="perm-badge">fissa</span>' : ''}
           </div>
-          <div class="votes">${r.votes}/${MAX_VOTES}</div>
+          <div class="votes ${isRestrictedId(r.id) ? 'votes-void' : ''}" ${isRestrictedId(r.id) ? 'title="Voti non validi finché qualcuno ha il pranzo al sacco"' : ''}>${r.votes}/${MAX_VOTES}</div>
           ${showRemove ? `<button class="remove-btn ${removeOk ? '' : 'locked'}" data-remove="${r.id}" data-name="${escapeHtml(r.name)}" ${busy?'disabled':''} aria-label="Rimuovi ${escapeHtml(r.name)}">−</button>` : ''}
         </div>`;
     }).join('');
@@ -525,6 +533,8 @@ function render(){
   const nonPermCount = list.filter(r => !r.permanent).length;
   const removeHint = !removeOk && nonPermCount > 0
     ? `<p class="remove-hint">Le proposte extra si possono rimuovere solo dalle ${REMOVE_FROM_HOUR}:00 in poi, per non alterare il voto in corso.</p>` : '';
+  const lunchboxNote = lunchboxRestriction
+    ? `<p class="lunchbox-note">🍱 Qualcuno ha già il pranzo: oggi si può scegliere solo tra Mensa, MercaTò o Kebab.</p>` : '';
 
   const specialLocked = decidedThisPeriod || votedToday;
   const specialRowHtml = `
@@ -576,6 +586,7 @@ function render(){
     </div>
     ${itemsHtml}
     ${removeHint}
+    ${lunchboxNote}
     ${addRowHtml}
     ${voteStatusHtml}
   `;
@@ -608,6 +619,7 @@ function render(){
 /* ---- voting: select up to 2, then confirm ---- */
 function togglePending(id){
   if(busy || myConfirmedPicks() || decidedThisPeriodNow() || myLunchboxActive() || myAbsentActive()) return;
+  if(anyoneHasLunchbox() && !LUNCHBOX_ALLOWED_IDS.includes(id) && !pendingSelection.includes(id)) return;
   if(pendingSelection.includes(id)){
     pendingSelection = pendingSelection.filter(x => x !== id);
   } else {
@@ -631,6 +643,10 @@ async function confirmVotes(){
       if(data.history && data.history[0] && data.history[0].periodKey === periodStr()){
         throw new Error('ALREADY_DECIDED');
       }
+      const lunchboxActiveNow = data.lunchbox && Object.keys(data.lunchbox).length > 0;
+      if(lunchboxActiveNow && picks.some(id => !LUNCHBOX_ALLOWED_IDS.includes(id))){
+        throw new Error('LUNCHBOX_RESTRICTED');
+      }
       const updates = {};
       picks.forEach(id => {
         const current = (data.restaurants && data.restaurants[id]) ? data.restaurants[id].votes : 0;
@@ -646,6 +662,9 @@ async function confirmVotes(){
       alert('Risulta che hai già votato oggi (magari da un altro dispositivo). Le tue scelte precedenti restano valide.');
     } else if(e && e.message === 'ALREADY_DECIDED'){
       alert('La missione è già stata decisa per questo turno: non è più possibile votare.');
+    } else if(e && e.message === 'LUNCHBOX_RESTRICTED'){
+      alert('Qualcuno ha già il pranzo: oggi si può scegliere solo tra Mensa, MercaTò o Kebab. Rivedi le tue scelte.');
+      pendingSelection = pendingSelection.filter(id => LUNCHBOX_ALLOWED_IDS.includes(id));
     } else {
       console.error(e);
       alert('Errore nel confermare il voto: ' + (e && e.message ? e.message : e));
@@ -660,6 +679,15 @@ function decidedThisPeriodNow(){
 
 function myLunchboxActive(){ return !!(state.lunchbox && state.lunchbox[deviceId]); }
 function myAbsentActive(){ return !!(state.absent && state.absent[deviceId]); }
+function anyoneHasLunchbox(){ return Object.keys(state.lunchbox || {}).length > 0; }
+// voti "validi": se qualcuno ha il pranzo al sacco, le opzioni fuori da Mensa/MercaTò/Kebab valgono 0
+// (i voti restano salvati: se il vincolo sparisce, tornano validi)
+function isRestrictedId(id, data){
+  const d = data || state;
+  const active = d.lunchbox && Object.keys(d.lunchbox).length > 0;
+  return active && !LUNCHBOX_ALLOWED_IDS.includes(id);
+}
+function effectiveVotes(r, data){ return isRestrictedId(r.id, data) ? 0 : (r.votes || 0); }
 
 async function toggleLunchbox(){
   if(busy || decidedThisPeriodNow() || myConfirmedPicks()) return;
@@ -667,8 +695,14 @@ async function toggleLunchbox(){
   busy = true; render();
   try{
     const updates = {};
-    updates[`lunchbox.${deviceId}`] = active ? firebase.firestore.FieldValue.delete() : { name: myName };
-    if(!active) updates[`absent.${deviceId}`] = firebase.firestore.FieldValue.delete();
+    if(active){
+      updates[`lunchbox.${deviceId}`] = firebase.firestore.FieldValue.delete();
+      updates[`voters.${deviceId}`] = firebase.firestore.FieldValue.delete();
+    } else {
+      updates[`lunchbox.${deviceId}`] = { name: myName };
+      updates[`absent.${deviceId}`] = firebase.firestore.FieldValue.delete();
+      updates[`voters.${deviceId}`] = true;
+    }
     await docRef.update(updates);
   }catch(e){ console.error(e); alert('Errore: ' + (e && e.message ? e.message : e)); }
   busy = false; render();
@@ -680,8 +714,14 @@ async function toggleAbsent(){
   busy = true; render();
   try{
     const updates = {};
-    updates[`absent.${deviceId}`] = active ? firebase.firestore.FieldValue.delete() : { name: myName };
-    if(!active) updates[`lunchbox.${deviceId}`] = firebase.firestore.FieldValue.delete();
+    if(active){
+      updates[`absent.${deviceId}`] = firebase.firestore.FieldValue.delete();
+      updates[`voters.${deviceId}`] = firebase.firestore.FieldValue.delete();
+    } else {
+      updates[`absent.${deviceId}`] = { name: myName };
+      updates[`lunchbox.${deviceId}`] = firebase.firestore.FieldValue.delete();
+      updates[`voters.${deviceId}`] = true;
+    }
     await docRef.update(updates);
   }catch(e){ console.error(e); alert('Errore: ' + (e && e.message ? e.message : e)); }
   busy = false; render();
@@ -810,14 +850,16 @@ async function announceAndClose(winner, titleText, statusText){
 }
 
 function openDecisionModal(){
-  const list = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }))
+  const allList = Object.entries(state.restaurants || {}).map(([id, r]) => ({ id, ...r }))
     .sort((a,b) => (a.order ?? 9999) - (b.order ?? 9999));
+  // se qualcuno ha il pranzo al sacco, in gara restano solo Mensa, MercaTò e Kebab
+  const list = allList.filter(r => !isRestrictedId(r.id));
   const decidedThisPeriod = !!(state.history && state.history[0] && state.history[0].periodKey === periodStr());
   if(spinning || decidedThisPeriod || list.length < 2 || uniqueVoterCount() < MIN_VOTERS) return;
   spinning = true;
 
-  const maxVotes = Math.max(...list.map(r => r.votes));
-  const tied = list.filter(r => r.votes === maxVotes);
+  const maxVotes = Math.max(...list.map(r => effectiveVotes(r)));
+  const tied = list.filter(r => effectiveVotes(r) === maxVotes);
 
   if(tied.length === 1){
     runSlotToWinner(list, tied[0]);
