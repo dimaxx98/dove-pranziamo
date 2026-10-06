@@ -30,15 +30,15 @@
   .sub{ color:var(--steel); font-size:14px; margin:0 0 16px; line-height:1.4; }
 
   /* banda di allerta */
-  .alert{ display:flex; align-items:center; justify-content:center; gap:10px;
-    border:1px solid var(--amber); background:rgba(255,176,32,0.12); border-radius:8px;
+  .alert{ border:1px solid var(--amber); background:rgba(255,176,32,0.12); border-radius:8px;
     padding:11px 14px; margin-bottom:10px; text-align:center;
     animation: alertPulse 2.6s ease-in-out infinite; }
-  .alert svg{ width:20px; height:20px; color:var(--amber); flex-shrink:0; }
+  .alert .ahead{ display:flex; align-items:center; justify-content:center; gap:8px; }
+  .alert svg{ width:19px; height:19px; color:var(--amber); flex-shrink:0; }
   .alert .atxt{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14px;
-    letter-spacing:0.09em; color:var(--amber); }
+    letter-spacing:0.09em; color:var(--amber); line-height:1; }
   .alert .asub{ display:block; font-family:'Rajdhani', sans-serif; font-weight:500; font-size:11.5px;
-    letter-spacing:0; color:var(--steel); margin-top:2px; }
+    letter-spacing:0; color:var(--steel); margin-top:5px; }
   @keyframes alertPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.62; } }
 
   /* schema danni */
@@ -159,7 +159,7 @@ function band(s){
   if(s < 25)   return { label: 'Volo tranquillo', color: 'var(--green)', advice: 'Via libera anche alla camicia bianca.' };
   if(s < 45)   return { label: 'Turbolenza lieve', color: '#9ACD32', advice: 'Occhio solo agli ultimi bocconi.' };
   if(s < 65)   return { label: 'Allerta gialla', color: 'var(--amber)', advice: 'Tovagliolo sulle ginocchia, non sul tavolo.' };
-  if(s < 82)   return { label: 'Allerta arancione', color: '#FF7A2F', advice: 'Tovagliolo al collo, senza vergogna.' };
+  if(s < 82)   return { label: 'Allerta arancione', color: '#FF7A2F', advice: 'Tovagliolo al collo.' };
   return { label: 'Allerta rossa', color: 'var(--red)', advice: 'Oggi evita il chiaro, e tieni a portata la penna smacchiatrice.' };
 }
 
@@ -321,10 +321,11 @@ function render(){
 
   const alertHtml = total >= ALERT_THRESHOLD ? `
     <div class="alert">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>
-      <span class="atxt">Attenzione
-        <span class="asub">${b.advice}</span>
-      </span>
+      <div class="ahead">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>
+        <span class="atxt">Attenzione</span>
+      </div>
+      <span class="asub">${b.advice}</span>
     </div>` : '';
 
   el.innerHTML = `
