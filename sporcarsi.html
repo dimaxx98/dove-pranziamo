@@ -29,6 +29,27 @@
   h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(20px,5.5vw,25px); margin:0 0 4px; }
   .sub{ color:var(--steel); font-size:14px; margin:0 0 16px; line-height:1.4; }
 
+  /* banda di allerta */
+  .alert{ display:flex; align-items:center; justify-content:center; gap:10px;
+    border:1px solid var(--amber); background:rgba(255,176,32,0.12); border-radius:8px;
+    padding:11px 14px; margin-bottom:10px; text-align:center;
+    animation: alertPulse 2.6s ease-in-out infinite; }
+  .alert svg{ width:20px; height:20px; color:var(--amber); flex-shrink:0; }
+  .alert .atxt{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14px;
+    letter-spacing:0.09em; color:var(--amber); }
+  .alert .asub{ display:block; font-family:'Rajdhani', sans-serif; font-weight:500; font-size:11.5px;
+    letter-spacing:0; color:var(--steel); margin-top:2px; }
+  @keyframes alertPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.62; } }
+
+  /* schema danni */
+  .suit{ display:block; width:min(52vw, 168px); height:auto; margin:4px auto 2px; }
+  .suit .outline{ fill:rgba(143,166,190,0.05); stroke:var(--steel); stroke-width:2;
+    stroke-linejoin:round; }
+  .suit .detail{ fill:none; stroke:var(--steel); stroke-width:1.2; opacity:0.55; }
+  .suit .stain{ animation: splat 0.35s cubic-bezier(.2,1.4,.4,1) both; transform-origin:center; }
+  @keyframes splat{ 0%{ opacity:0; transform:scale(0.2); } 100%{ opacity:1; transform:scale(1); } }
+  .suit-cap{ font-size:11px; color:var(--steel); text-align:center; margin:0 0 6px; }
+
   /* quadrante del rischio */
   .gauge{ position:relative; overflow:hidden; border:1px solid var(--gold); border-radius:10px;
     padding:16px; margin-bottom:6px; text-align:center;
@@ -75,7 +96,7 @@
     Torna alla base
   </a>
   <h1>Rischio macchia</h1>
-  <p class="sub">Componi il vassoio e vedi quante probabilità hai di tornare in ufficio con un ricordo del pranzo addosso.</p>
+  <p class="sub">Componi il vassoio e vedi quante probabilità hai di sporcarti.</p>
   <div id="content"><p class="empty">Caricamento…</p></div>
 </div>
 
@@ -140,6 +161,63 @@ function band(s){
   if(s < 65)   return { label: 'Allerta gialla', color: 'var(--amber)', advice: 'Tovagliolo sulle ginocchia, non sul tavolo.' };
   if(s < 82)   return { label: 'Allerta arancione', color: '#FF7A2F', advice: 'Tovagliolo al collo, senza vergogna.' };
   return { label: 'Allerta rossa', color: 'var(--red)', advice: 'Oggi evita il chiaro, e tieni a portata la penna smacchiatrice.' };
+}
+
+/* ---------- schema danni ----------
+   Ogni piatto scelto lascia una macchia sulla tuta, sempre nello stesso punto
+   per lo stesso piatto: la posizione dipende dal nome, non dal caso. */
+const ALERT_THRESHOLD = 70;
+
+const ANCHORS = {
+  main:     [[100,118],[86,165]],   // il primo finisce sulla pancia o in grembo
+  secondo:  [[82,78],[118,78]],     // il secondo sul petto
+  contorno: [[150,110],[118,195]]   // il contorno su manica o gamba
+};
+
+function hashOf(s){
+  let h = 0;
+  for(let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function stainSvg(name, group){
+  const sd = scoreDish(name);
+  const h = hashOf(name);
+  const spot = ANCHORS[group][h % ANCHORS[group].length];
+  const cx = spot[0], cy = spot[1];
+  const color = band(sd.score).color;
+  const r = 4 + (sd.score / 100) * 9;
+
+  let out = `<g class="stain" style="color:${color}">`;
+  out += `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="currentColor" opacity="0.82"/>`;
+  for(let i = 0; i < 3; i++){
+    const ang = ((h >> (i * 3)) % 360) * Math.PI / 180;
+    const dist = r + 3 + ((h >> (i * 2)) % 7);
+    const rr = Math.max(1.3, r * 0.3 - i * 0.5);
+    out += `<circle cx="${(cx + Math.cos(ang) * dist).toFixed(1)}" cy="${(cy + Math.sin(ang) * dist).toFixed(1)}" r="${rr.toFixed(1)}" fill="currentColor" opacity="0.6"/>`;
+  }
+  return out + `</g>`;
+}
+
+function suitSvg(){
+  const stains = Object.entries(pick)
+    .filter(([, name]) => name)
+    .map(([group, name]) => stainSvg(name, group))
+    .join('');
+
+  return `
+    <svg class="suit" viewBox="0 0 200 250" role="img" aria-label="Schema dei danni sulla tuta">
+      <path class="outline" d="M82,32 L60,44 L42,60 L36,148 L58,152 L64,84 L66,130 L66,234 L94,234 L100,142 L106,234 L134,234 L134,130 L136,84 L142,152 L164,148 L158,60 L140,44 L118,32 L100,50 Z"/>
+      <path class="detail" d="M100,50 L100,142"/>
+      <path class="detail" d="M66,130 L134,130"/>
+      <rect class="detail" x="72" y="70" width="20" height="15" rx="2"/>
+      <rect class="detail" x="108" y="70" width="20" height="15" rx="2"/>
+      <rect class="detail" x="72" y="150" width="22" height="17" rx="2"/>
+      <rect class="detail" x="106" y="150" width="22" height="17" rx="2"/>
+      <path class="detail" d="M40,100 L56,100"/>
+      <path class="detail" d="M144,100 L160,100"/>
+      ${stains}
+    </svg>`;
 }
 
 /* ---------- Firestore ---------- */
@@ -241,12 +319,23 @@ function render(){
     return `<div class="group"><h2>${g.title}</h2>${g.hint ? `<p class="ghint">${g.hint}</p>` : ''}${rows}${none}</div>`;
   }).join('');
 
+  const alertHtml = total >= ALERT_THRESHOLD ? `
+    <div class="alert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>
+      <span class="atxt">Attenzione
+        <span class="asub">${b.advice}</span>
+      </span>
+    </div>` : '';
+
   el.innerHTML = `
+    ${alertHtml}
     <div class="gauge">
       <div class="glabel">Il tuo vassoio</div>
+      ${suitSvg()}
+      <p class="suit-cap">${chosen.length ? 'ogni macchia è un piatto che hai scelto' : 'scegli le portate e vedi dove ti colpiscono'}</p>
       <div class="gscore" style="color:${b.color}">${total}%</div>
       <div class="gband" style="color:${b.color}">${b.label}</div>
-      <div class="gadvice">${b.advice}${toughOnes.length ? ` · ${toughOnes.length} ${toughOnes.length===1?'piatto lascia':'piatti lasciano'} macchie permanenti` : ''}</div>
+      <div class="gadvice">${total >= ALERT_THRESHOLD ? '' : b.advice}${toughOnes.length ? `${total >= ALERT_THRESHOLD ? '' : ' · '}${toughOnes.length} ${toughOnes.length===1?'piatto lascia':'piatti lasciano'} macchie permanenti` : ''}</div>
       ${best && worst ? `<div class="gtray">
         Più sicuro oggi: <b style="color:var(--green)">${best.s}%</b> — ${escapeHtml(best.tray.join(' + '))}<br>
         Più rischioso: <b style="color:var(--red)">${worst.s}%</b> — ${escapeHtml(worst.tray.join(' + '))}
@@ -259,9 +348,7 @@ function render(){
     ${groupsHtml}
     <div class="tips">
       <b>Come leggerlo.</b> Ogni piatto ha una sua probabilità, e il totale è la possibilità che
-      <b>almeno uno</b> dei tre ti sporchi — per questo tre piatti tranquilli fanno comunque più di uno solo.
-      Pesano di più sugo di pomodoro, zuppe e salse speziate; pomodoro, curry e barbabietola sono segnati a parte
-      perché la macchia resta anche dopo il lavaggio.
+      <b>almeno uno</b> dei tre piatti ti sporchi.
     </div>`;
 
   document.querySelectorAll('.opt').forEach(btn => {
