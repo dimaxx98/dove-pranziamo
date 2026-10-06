@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rischio macchia — Dove pranziamo?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;}
+  :root{
+    --sky:#0E1A2B; --panel:#142338; --panel-light:#1B2E48;
+    --amber:#FFB020; --gold:#F3C969; --red:#E8432F; --green:#3DDC6E;
+    --steel:#8FA6BE; --ice:#EAF1F7; --line: rgba(143,166,190,0.28);
+  }
+  body{
+    background: radial-gradient(ellipse at 50% -10%, #1C3350 0%, var(--sky) 55%);
+    color:var(--ice); font-family:'Rajdhani', sans-serif; min-height:100vh; margin:0;
+    padding:0 0 max(32px, env(safe-area-inset-bottom));
+  }
+  .sheet{ width:100%; max-width:520px; margin:0 auto; background:var(--panel);
+    border:1px solid var(--line); padding:18px 18px 24px; min-height:100vh;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+  @media (min-width:560px){ body{ padding-top:24px; } .sheet{ border-radius:12px; min-height:auto; } }
+
+  .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--amber);
+    text-decoration:none; margin-bottom:12px; }
+  .back-link svg{ width:15px; height:15px; }
+  h1{ font-family:'Orbitron', sans-serif; font-weight:800; font-size:clamp(20px,5.5vw,25px); margin:0 0 4px; }
+  .sub{ color:var(--steel); font-size:14px; margin:0 0 16px; line-height:1.4; }
+
+  /* quadrante del rischio */
+  .gauge{ position:relative; overflow:hidden; border:1px solid var(--gold); border-radius:10px;
+    padding:16px; margin-bottom:6px; text-align:center;
+    background:linear-gradient(180deg, rgba(243,201,105,0.10), rgba(243,201,105,0.02)); }
+  .gauge .glabel{ font-size:10.5px; letter-spacing:0.08em; color:var(--gold); text-transform:uppercase; }
+  .gauge .gscore{ font-family:'Orbitron', sans-serif; font-size:44px; font-weight:800; line-height:1.05; margin:4px 0 2px; }
+  .gauge .gband{ font-size:15px; font-weight:600; }
+  .gauge .gadvice{ font-size:12.5px; color:var(--steel); margin-top:6px; }
+  .gauge .gtray{ font-size:12px; color:var(--steel); margin-top:8px; padding-top:8px;
+    border-top:1px dashed var(--line); }
+
+  .meta{ display:flex; justify-content:space-between; align-items:center; gap:8px;
+    font-size:11.5px; color:var(--steel); margin:0 0 16px; }
+  .meta .tag{ border:1px solid var(--line); border-radius:4px; padding:2px 7px; white-space:nowrap; }
+  .meta .tag.warn{ border-color:var(--red); color:var(--red); }
+
+  .group{ margin-bottom:16px; }
+  .group h2{ font-family:'Orbitron', sans-serif; font-size:12.5px; margin:0 0 2px; color:var(--ice);
+    letter-spacing:0.02em; }
+  .group .ghint{ font-size:11.5px; color:var(--steel); margin:0 0 8px; }
+  .opt{ display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    background:transparent; border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; margin-bottom:7px; cursor:pointer; color:var(--ice);
+    font-family:'Rajdhani', sans-serif; font-size:15px; }
+  .opt:last-child{ margin-bottom:0; }
+  .opt.sel{ border-color:var(--amber); background:rgba(255,176,32,0.12); }
+  .opt .dot{ width:16px; height:16px; border-radius:50%; border:2px solid var(--line); flex-shrink:0; }
+  .opt.sel .dot{ border-color:var(--amber); background:var(--amber); box-shadow:inset 0 0 0 3px var(--panel); }
+  .opt .txt{ flex:1; min-width:0; }
+  .opt .pct{ font-family:'Orbitron', sans-serif; font-size:12px; flex-shrink:0; }
+  .opt .why{ display:block; font-size:11px; color:var(--steel); margin-top:2px; }
+  .opt.none{ color:var(--steel); font-style:italic; }
+
+  .tips{ margin-top:20px; padding-top:14px; border-top:1px solid var(--line); font-size:12.5px;
+    color:var(--steel); line-height:1.6; }
+  .tips b{ color:var(--ice); font-weight:600; }
+  .empty{ padding:26px 10px; color:var(--steel); text-align:center; font-size:14px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <a class="back-link" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    Torna alla base
+  </a>
+  <h1>Rischio macchia</h1>
+  <p class="sub">Componi il vassoio e vedi quante probabilità hai di tornare in ufficio con un ricordo del pranzo addosso.</p>
+  <div id="content"><p class="empty">Caricamento…</p></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ======================================================
+   INCOLLA QUI
+   ====================================================== */
+const firebaseConfig = {
+apiKey: "AIzaSyDkUCqUc3XJGEsRneAut6TrXCyeRi28beo",
+authDomain: "lunchwhere-14987.firebaseapp.com",
+projectId: "lunchwhere-14987",
+storageBucket: "lunchwhere-14987.firebasestorage.app",
+messagingSenderId: "195899666959",
+appId: "1:195899666959:web:72a61dc464b169bdfee97a",
+measurementId: "G-1H99Y8N1XY"
+};
+/* ====================================================== */
+
+const RESET_HOUR = 14;  // allineato a index.html e a scripts/fetch-menu.mjs
+
+/* ---------- motore del punteggio ----------
+   Ogni regola che corrisponde somma punti; il totale è limitato a 100.
+   `tough` marca i pigmenti che non vanno più via col lavaggio. */
+const RULES = [
+  { re: /\b(rag[uù]|sugo|pomodor\w*|amatriciana|arrabbiata|bolognese|puttanesca|pizzaiola|margherita|marinara|diavola|capricciosa|parmigiana)\b/i, pts: 45, why: 'sugo di pomodoro', tough: true },
+  { re: /\b(zuppa|minestra|minestrone|brodo|vellutata|crema di|passato di|crema)\b/i, pts: 40, why: 'liquido da cucchiaio' },
+  { re: /\b(curry|spezzatino|stufato|gulasch|in umido|tikka|all['’]arancia)\b/i, pts: 35, why: 'salsa speziata', tough: true },
+  { re: /\b(vino rosso|caff[eè]|cioccolat\w*)\b/i, pts: 30, why: 'macchia classica', tough: true },
+  { re: /\b(spaghetti|linguine|bucatini|tagliatelle|fettuccine|tagliolini|vermicelli|gnocchetti|penne|fusilli)\b/i, pts: 25, why: 'pasta, rischio schizzo' },
+  { re: /\b(lasagne|cannelloni|scamorza|mozzarella|caprino|tomino|brie|filante|gratinat\w*|fuso|fonduta|ricotta|pesto)\b/i, pts: 22, why: 'formaggio o pesto' },
+  { re: /\b(pizza|piadina|focaccia|panino|wrap|kebab|hamburger|calzone|toast|sfoglia|fagottin\w*)\b/i, pts: 20, why: 'si mangia con le mani' },
+  { re: /\b(frittur\w*|fritt\w*|crocchett\w*|panat\w*|cotolett\w*|arancin\w*|patatine|scaloppa)\b/i, pts: 18, why: 'unto e briciole' },
+  { re: /\b(maionese|ketchup|senape|salsa|yogurt|tzatziki|guacamole|agro)\b/i, pts: 16, why: 'salsa o condimento' },
+  { re: /\b(barbabietola|zafferano|curcuma|paprika|peperoncino|pat[eè]|olive)\b/i, pts: 15, why: 'pigmento ostinato', tough: true },
+  { re: /\b(all['’]olio|olio|condit\w*|pinzimonio|vinaigrette|ripassat\w*)\b/i, pts: 12, why: 'condimento che cola' },
+  { re: /\b(riso|pilaf|insalata|carote|verdure|fagiolini|ceci|cannellini|piselli|lesso|bollito|vapore|grigliat\w*|arrosto|patate|frutta|julienne|legumi|macedonia|biete)\b/i, pts: 5, why: 'piatto asciutto' }
+];
+const BASE = 8;
+
+function scoreDish(name){
+  let score = BASE; const reasons = []; let tough = false;
+  for(const r of RULES){
+    if(r.re.test(name)){ score += r.pts; reasons.push(r.why); if(r.tough) tough = true; }
+  }
+  return { score: Math.min(100, score), reasons: [...new Set(reasons)], tough };
+}
+
+/* Probabilità combinata: ogni piatto è un tentativo indipendente di sporcarti.
+   Non si sommano i rischi, si somma la possibilità che almeno uno vada storto. */
+function combine(scores){
+  if(scores.length === 0) return 0;
+  const miss = scores.reduce((acc, s) => acc * (1 - s / 100), 1);
+  return Math.round((1 - miss) * 100);
+}
+
+function band(s){
+  if(s === 0)  return { label: 'Vassoio vuoto', color: 'var(--steel)', advice: 'Scegli qualcosa e ti dico come va a finire.' };
+  if(s < 25)   return { label: 'Volo tranquillo', color: 'var(--green)', advice: 'Via libera anche alla camicia bianca.' };
+  if(s < 45)   return { label: 'Turbolenza lieve', color: '#9ACD32', advice: 'Occhio solo agli ultimi bocconi.' };
+  if(s < 65)   return { label: 'Allerta gialla', color: 'var(--amber)', advice: 'Tovagliolo sulle ginocchia, non sul tavolo.' };
+  if(s < 82)   return { label: 'Allerta arancione', color: '#FF7A2F', advice: 'Tovagliolo al collo, senza vergogna.' };
+  return { label: 'Allerta rossa', color: 'var(--red)', advice: 'Oggi evita il chiaro, e tieni a portata la penna smacchiatrice.' };
+}
+
+/* ---------- Firestore ---------- */
+let db = null, menuRef = null;
+const configOk = firebaseConfig.apiKey !== "INCOLLA_QUI";
+if(configOk){
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  menuRef = db.collection('lunch').doc('menu');
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+/* il pranzo del turno di voto in corso: prima delle 14 è oggi, dopo è domani */
+function expectedDate(){
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if(now.getHours() >= RESET_HOUR) d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let menu = null;
+let pick = { main: null, secondo: null, contorno: null };
+
+try{
+  const saved = JSON.parse(localStorage.getItem('lunch-tray') || 'null');
+  if(saved && saved.date === expectedDate()) pick = saved.pick;
+}catch(e){ /* niente */ }
+
+function savePick(){
+  try{ localStorage.setItem('lunch-tray', JSON.stringify({ date: expectedDate(), pick })); }catch(e){}
+}
+
+function optionsFor(group){
+  if(!menu) return [];
+  if(group === 'main')     return [...(menu.primo || []), ...(menu.rosticceria || [])];
+  if(group === 'secondo')  return menu.secondo || [];
+  if(group === 'contorno') return menu.contorni || [];
+  return [];
+}
+
+function render(){
+  const el = document.getElementById('content');
+
+  if(!configOk){ el.innerHTML = '<p class="empty">Configurazione Firebase mancante in questo file.</p>'; return; }
+  if(!menu){ el.innerHTML = '<p class="empty">Il menù non è ancora stato scaricato.<br>L\'aggiornamento automatico gira la mattina e dopo le 14.</p>'; return; }
+  if(menu.weekend){
+    el.innerHTML = '<p class="empty">Weekend: nessun menù mensa.<br>Il rischio macchia oggi dipende solo da te.</p>';
+    return;
+  }
+
+  const stale = menu.date !== expectedDate();
+  const groups = [
+    { key: 'main',     title: 'Primo o pizza',  hint: 'Si sceglie l\'uno o l\'altra, non entrambi.' },
+    { key: 'secondo',  title: 'Secondo',        hint: '' },
+    { key: 'contorno', title: 'Contorno',       hint: '' }
+  ];
+
+  const chosen = Object.values(pick).filter(Boolean);
+  const total = combine(chosen.map(n => scoreDish(n).score));
+  const b = band(total);
+  const toughOnes = chosen.filter(n => scoreDish(n).tough);
+
+  /* vassoio più sicuro e più rischioso tra tutte le combinazioni possibili */
+  let best = null, worst = null;
+  const mains = [null, ...optionsFor('main')];
+  const seconds = [null, ...optionsFor('secondo')];
+  const sides = [null, ...optionsFor('contorno')];
+  for(const a of mains) for(const c of seconds) for(const d of sides){
+    const tray = [a,c,d].filter(Boolean);
+    if(tray.length !== 3) continue;   // confrontiamo solo vassoi completi
+    const s = combine(tray.map(n => scoreDish(n).score));
+    if(!best || s < best.s) best = { s, tray };
+    if(!worst || s > worst.s) worst = { s, tray };
+  }
+
+  const groupsHtml = groups.map(g => {
+    const opts = optionsFor(g.key);
+    if(opts.length === 0) return '';
+    const rows = opts.map(name => {
+      const sd = scoreDish(name);
+      const sb = band(sd.score);
+      const sel = pick[g.key] === name;
+      return `
+        <button class="opt ${sel ? 'sel' : ''}" data-group="${g.key}" data-name="${escapeHtml(name)}">
+          <span class="dot"></span>
+          <span class="txt">${escapeHtml(name)}
+            <span class="why">${sd.reasons.length ? escapeHtml(sd.reasons.join(' · ')) : 'nessun fattore particolare'}${sd.tough ? ' · non viene più via' : ''}</span>
+          </span>
+          <span class="pct" style="color:${sb.color}">${sd.score}%</span>
+        </button>`;
+    }).join('');
+    const none = `
+      <button class="opt none ${pick[g.key] === null ? 'sel' : ''}" data-group="${g.key}" data-name="">
+        <span class="dot"></span><span class="txt">salto questa portata</span>
+      </button>`;
+    return `<div class="group"><h2>${g.title}</h2>${g.hint ? `<p class="ghint">${g.hint}</p>` : ''}${rows}${none}</div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="gauge">
+      <div class="glabel">Il tuo vassoio</div>
+      <div class="gscore" style="color:${b.color}">${total}%</div>
+      <div class="gband" style="color:${b.color}">${b.label}</div>
+      <div class="gadvice">${b.advice}${toughOnes.length ? ` · ${toughOnes.length} ${toughOnes.length===1?'piatto lascia':'piatti lasciano'} macchie permanenti` : ''}</div>
+      ${best && worst ? `<div class="gtray">
+        Più sicuro oggi: <b style="color:var(--green)">${best.s}%</b> — ${escapeHtml(best.tray.join(' + '))}<br>
+        Più rischioso: <b style="color:var(--red)">${worst.s}%</b> — ${escapeHtml(worst.tray.join(' + '))}
+      </div>` : ''}
+    </div>
+    <div class="meta">
+      <span>${menu.dayName || ''} ${menu.date}</span>
+      <span class="tag ${stale ? 'warn' : ''}">${stale ? 'menù non aggiornato' : 'aggiornato in automatico'}</span>
+    </div>
+    ${groupsHtml}
+    <div class="tips">
+      <b>Come leggerlo.</b> Ogni piatto ha una sua probabilità, e il totale è la possibilità che
+      <b>almeno uno</b> dei tre ti sporchi — per questo tre piatti tranquilli fanno comunque più di uno solo.
+      Pesano di più sugo di pomodoro, zuppe e salse speziate; pomodoro, curry e barbabietola sono segnati a parte
+      perché la macchia resta anche dopo il lavaggio.
+    </div>`;
+
+  document.querySelectorAll('.opt').forEach(btn => {
+    btn.onclick = () => {
+      const g = btn.dataset.group;
+      const n = btn.dataset.name || null;
+      pick[g] = (pick[g] === n) ? null : n;
+      savePick(); render();
+    };
+  });
+}
+
+async function init(){
+  if(!configOk){ render(); return; }
+  try{
+    const snap = await menuRef.get();
+    if(snap.exists) menu = snap.data();
+    menuRef.onSnapshot(doc => { if(doc.exists){ menu = doc.data(); render(); } }, err => console.error(err));
+    render();
+  }catch(e){
+    console.error(e);
+    document.getElementById('content').innerHTML =
+      `<p class="empty">Errore di collegamento al database.<br><span style="font-size:12px;opacity:0.75;">${escapeHtml(e && e.message ? e.message : String(e))}</span></p>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
