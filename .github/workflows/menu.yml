@@ -1,0 +1,27 @@
+name: Menù mensa
+
+# Scarica il menù del giorno da oggiamensa.it e lo scrive su Firestore.
+# Gratis e illimitato finché il repository è pubblico.
+
+on:
+  schedule:
+    - cron: '5 6 * * 1-5'    # ~08:05 in Italia (estate)
+    - cron: '5 7 * * 1-5'    # ~08:05 in Italia (inverno)
+    - cron: '5 12 * * 1-5'   # ~14:05 in Italia (estate) — subito dopo il reset del voto
+    - cron: '5 13 * * 1-5'   # ~14:05 in Italia (inverno)
+  workflow_dispatch:          # per lanciarlo a mano dalla scheda Actions
+
+jobs:
+  menu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Scarica il menù e scrivilo su Firestore
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: node scripts/fetch-menu.mjs
