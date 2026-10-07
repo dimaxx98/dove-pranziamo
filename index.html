@@ -159,6 +159,17 @@
     pointer-events:none; z-index:80; animation: flashfade 0.7s ease-out forwards; }
   @keyframes flashfade{ 0%{opacity:0;} 15%{opacity:1;} 100%{opacity:0;} }
 
+  /* saluto a chi non viene a pranzo */
+  .bubbles{ position:fixed; inset:0; pointer-events:none; z-index:90; overflow:hidden; }
+  .bubble{ position:absolute; bottom:-60px; animation: bubbleRise linear forwards; will-change:transform; }
+  .bubble span{ display:block; animation: bubbleSway ease-in-out infinite alternate; will-change:transform; }
+  @keyframes bubbleRise{ to{ transform:translateY(-115vh); } }
+  @keyframes bubbleSway{
+    from{ transform:translateX(-14px) rotate(-12deg); }
+    to{ transform:translateX(14px) rotate(12deg); }
+  }
+  @media (prefers-reduced-motion: reduce){ .bubbles{ display:none; } }
+
   .section-head{ display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line);
     padding-bottom:8px; margin:4px 0 2px; gap:8px; }
   .section-head h2{ font-family:'Orbitron', sans-serif; font-weight:700; font-size:14.5px; margin:0; color:var(--ice); }
@@ -716,6 +727,7 @@ async function toggleAbsent(){
   if(busy || decidedThisPeriodNow() || myConfirmedPicks()) return;
   const active = myAbsentActive();
   busy = true; render();
+  if(!active) fingerBubbles();   // solo quando lo accendi, non quando ci ripensi
   try{
     const updates = {};
     if(active){
@@ -837,6 +849,45 @@ function buildSlotMarkup(list){
 function goldFlash(){
   const f = document.createElement('div'); f.className = 'gold-flash';
   document.body.appendChild(f); setTimeout(() => f.remove(), 700);
+}
+
+/* Saluto a chi dichiara che oggi non viene a pranzo:
+   una nuvola di emoji che sale a galla come bollicine. */
+function fingerBubbles(){
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'bubbles';
+  wrap.setAttribute('aria-hidden', 'true');
+
+  const COUNT = 30;
+  let longest = 0;
+  const rnd = (min, max) => min + Math.random() * (max - min);
+
+  for(let i = 0; i < COUNT; i++){
+    const rise  = rnd(3.2, 5.4);   // quanto ci mette a salire
+    const delay = rnd(0, 1.8);     // sfalsate, così non partono in blocco
+    longest = Math.max(longest, rise + delay);
+
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.style.left = rnd(-2, 98) + 'vw';
+    b.style.fontSize = rnd(20, 42).toFixed(0) + 'px';
+    b.style.opacity = rnd(0.55, 1).toFixed(2);
+    b.style.animationDuration = rise.toFixed(2) + 's';
+    b.style.animationDelay = delay.toFixed(2) + 's';
+
+    const s = document.createElement('span');
+    s.textContent = '🖕🏻';
+    s.style.animationDuration = rnd(0.9, 2.1).toFixed(2) + 's';
+    s.style.animationDelay = rnd(0, 0.8).toFixed(2) + 's';
+
+    b.appendChild(s);
+    wrap.appendChild(b);
+  }
+
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), (longest + 0.4) * 1000);
 }
 
 async function announceAndClose(winner, titleText, statusText){
