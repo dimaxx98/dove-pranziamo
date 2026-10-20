@@ -235,7 +235,16 @@ function expectedDate(){
   const now = new Date();
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if(now.getHours() >= RESET_HOUR) d.setDate(d.getDate() + 1);
+  // stesso salto del weekend che fa scripts/fetch-menu.mjs, altrimenti le due
+  // date non coincidono e il menù risulterebbe sempre "non aggiornato"
+  while(d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function prettyDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
 }
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -266,12 +275,19 @@ function render(){
 
   if(!configOk){ el.innerHTML = '<p class="empty">Configurazione Firebase mancante in questo file.</p>'; return; }
   if(!menu){ el.innerHTML = '<p class="empty">Il menù non è ancora stato scaricato.<br>L\'aggiornamento automatico gira la mattina e dopo le 14.</p>'; return; }
+
+  // La freschezza si controlla per prima: un menù vecchio non va mai mostrato
+  // come se fosse quello di oggi, altrimenti si calcola il rischio sui piatti sbagliati.
+  if(menu.date !== expectedDate()){
+    el.innerHTML = `<p class="empty">Il menù di <b>${escapeHtml(prettyDate(expectedDate()))}</b> non è ancora arrivato.<br>
+      L'ultimo scaricato è quello di ${escapeHtml(prettyDate(menu.date))}.<br><br>
+      <span style="font-size:12.5px;opacity:0.8;">L'aggiornamento automatico gira la mattina e dopo le 14.</span></p>`;
+    return;
+  }
   if(menu.weekend){
     el.innerHTML = '<p class="empty">Weekend: nessun menù mensa.<br>Il rischio macchia oggi dipende solo da te.</p>';
     return;
   }
-
-  const stale = menu.date !== expectedDate();
   const groups = [
     { key: 'main',     title: 'Primo o pizza',  hint: 'Si sceglie l\'uno o l\'altra, non entrambi.' },
     { key: 'secondo',  title: 'Secondo',        hint: '' },
@@ -345,7 +361,7 @@ function render(){
     </div>
     <div class="meta">
       <span>${menu.dayName || ''} ${menu.date}</span>
-      <span class="tag ${stale ? 'warn' : ''}">${stale ? 'menù non aggiornato' : 'aggiornato in automatico'}</span>
+      <span class="tag">aggiornato in automatico</span>
     </div>
     ${groupsHtml}
     <div class="tips">
