@@ -4,6 +4,7 @@ const RESET_HOUR = 14;   // deve restare allineato a RESET_HOUR in index.html
 
 if(!PROJECT_ID) throw new Error('Manca FIREBASE_PROJECT_ID');
 
+/* ---------- orario di Roma, indipendente dal fuso del runner ---------- */
 function romeParts(date = new Date()){
   const p = Object.fromEntries(
     new Intl.DateTimeFormat('en-GB', {
@@ -20,6 +21,10 @@ function targetDate(){
   const p = romeParts();
   const d = new Date(Date.UTC(p.year, p.month - 1, p.day));
   if(p.hour >= RESET_HOUR) d.setUTCDate(d.getUTCDate() + 1);
+  // In mensa non si pranza sabato e domenica: il prossimo pranzo utile è il lunedì.
+  // Senza questo salto, il venerdì dopo le 14 si finiva sul "buon weekend" del sito
+  // e il menù restava bloccato lì fino alla corsa successiva.
+  while(d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() + 1);
   return d;
 }
 
